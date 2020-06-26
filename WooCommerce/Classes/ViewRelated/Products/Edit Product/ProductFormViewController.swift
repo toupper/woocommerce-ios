@@ -47,7 +47,6 @@ final class ProductFormViewController: UIViewController {
     private var cancellableProduct: ObservationToken?
     private var cancellableProductName: ObservationToken?
     private var cancellableUpdateEnabled: ObservationToken?
-    private var cancellableNavigationRightBarButtonItems: ObservationToken?
 
     init(product: Product,
          currency: String = CurrencySettings.shared.symbol(from: CurrencySettings.shared.currencyCode),
@@ -58,10 +57,6 @@ final class ProductFormViewController: UIViewController {
         self.presentationStyle = presentationStyle
         self.isEditProductsRelease2Enabled = isEditProductsRelease2Enabled
         self.isEditProductsRelease3Enabled = isEditProductsRelease3Enabled
-        self.tableViewModel = DefaultProductFormTableViewModel(product: product,
-                                                               currency: currency,
-                                                               isEditProductsRelease2Enabled: isEditProductsRelease2Enabled,
-                                                               isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
         self.productImageActionHandler = ProductImageActionHandler(siteID: product.siteID,
                                                                    product: product)
         self.productUIImageLoader = DefaultProductUIImageLoader(productImageActionHandler: productImageActionHandler,
@@ -69,7 +64,10 @@ final class ProductFormViewController: UIViewController {
         self.viewModel = ProductFormViewModel(product: product,
                                               productImageActionHandler: productImageActionHandler,
                                               isEditProductsRelease2Enabled: isEditProductsRelease2Enabled,
-                                              isEditProductsRelease3Enabled: isEditProductsRelease2Enabled)
+                                              isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+        self.tableViewModel = DefaultProductFormTableViewModel(product: product,
+                                                               actionsFactory: viewModel.actionsFactory,
+                                                               currency: currency)
         self.tableViewDataSource = ProductFormTableViewDataSource(viewModel: tableViewModel,
                                                                   productImageStatuses: productImageActionHandler.productImageStatuses,
                                                                   productUIImageLoader: productUIImageLoader,
@@ -90,15 +88,12 @@ final class ProductFormViewController: UIViewController {
         cancellableProduct?.cancel()
         cancellableProductName?.cancel()
         cancellableUpdateEnabled?.cancel()
-        cancellableNavigationRightBarButtonItems?.cancel()
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Presentation style is configured before navigation bar updates below because the subscriber for the navigation bar updates is different.
         configurePresentationStyle()
-
         configureNavigationBar()
         configureMainView()
         configureTableView()
@@ -184,9 +179,8 @@ private extension ProductFormViewController {
         switch presentationStyle {
         case .contained(let containerViewController):
             containerViewController.addCloseNavigationBarButton(target: self, action: #selector(closeNavigationBarButtonTapped))
-            observeNavigationRightBarButtonItems(viewControllerWithNavigationItem: containerViewController)
         case .navigationStack:
-            observeNavigationRightBarButtonItems(viewControllerWithNavigationItem: self)
+            break
         }
     }
 
@@ -196,12 +190,6 @@ private extension ProductFormViewController {
             return
         }
         exitForm()
-    }
-
-    func observeNavigationRightBarButtonItems(viewControllerWithNavigationItem: UIViewController) {
-        cancellableNavigationRightBarButtonItems = navigationRightBarButtonItems.subscribe { [weak viewControllerWithNavigationItem] rightBarButtonItems in
-            viewControllerWithNavigationItem?.navigationItem.rightBarButtonItems = rightBarButtonItems
-        }
     }
 
     func configureMoreDetailsContainerView() {
@@ -247,9 +235,8 @@ private extension ProductFormViewController {
         updateMoreDetailsButtonVisibility()
 
         tableViewModel = DefaultProductFormTableViewModel(product: product,
-                                                          currency: currency,
-                                                          isEditProductsRelease2Enabled: isEditProductsRelease2Enabled,
-                                                          isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                                          actionsFactory: viewModel.actionsFactory,
+                                                          currency: currency)
         tableViewDataSource = ProductFormTableViewDataSource(viewModel: tableViewModel,
                                                              productImageStatuses: productImageActionHandler.productImageStatuses,
                                                              productUIImageLoader: productUIImageLoader,
@@ -285,7 +272,7 @@ private extension ProductFormViewController {
         let title = NSLocalizedString("Add more details",
                                       comment: "Title of the bottom sheet from the product form to add more product details.")
         let viewProperties = BottomSheetListSelectorViewProperties(title: title)
-        let actions = viewModel.bottomSheetActionsFactory.actions()
+        let actions = viewModel.actionsFactory.bottomSheetActions()
         let dataSource = ProductFormBottomSheetListSelectorCommand(actions: actions) { [weak self] action in
                                                                     self?.dismiss(animated: true) { [weak self] in
                                                                         switch action {
@@ -309,7 +296,7 @@ private extension ProductFormViewController {
     }
 
     func updateMoreDetailsButtonVisibility() {
-        let moreDetailsActions = viewModel.bottomSheetActionsFactory.actions()
+        let moreDetailsActions = viewModel.actionsFactory.bottomSheetActions()
         moreDetailsContainerView.isHidden = moreDetailsActions.isEmpty
     }
 }
@@ -470,6 +457,12 @@ private extension ProductFormViewController {
 private extension ProductFormViewController {
     func updateNavigationBarTitle(productName: String) {
         navigationItem.title = productName
+        switch presentationStyle {
+        case .contained(let containerViewController):
+            containerViewController.navigationItem.title = productName
+        default:
+            break
+        }
     }
 
     func updateNavigationBar(isUpdateEnabled: Bool) {
@@ -483,7 +476,13 @@ private extension ProductFormViewController {
             rightBarButtonItems.insert(createMoreOptionsBarButtonItem(), at: 0)
         }
 
-        navigationRightBarButtonItemsSubject.send(rightBarButtonItems)
+        navigationItem.rightBarButtonItems = rightBarButtonItems
+        switch presentationStyle {
+        case .contained(let containerViewController):
+            containerViewController.navigationItem.rightBarButtonItems = rightBarButtonItems
+        default:
+            break
+        }
     }
 
     func createUpdateBarButtonItem() -> UIBarButtonItem {

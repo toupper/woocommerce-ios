@@ -26,8 +26,8 @@ target 'WooCommerce' do
   #
 
   # Use the latest bugfix for coretelephony
-  #pod 'Automattic-Tracks-iOS', :git => 'https://github.com/Automattic/Automattic-Tracks-iOS.git', :tag => '0.2.4'
-  pod 'Automattic-Tracks-iOS', '~> 0.4.4'
+  #pod 'Automattic-Tracks-iOS', :git => 'https://github.com/Automattic/Automattic-Tracks-iOS.git', :branch => 'add/application-state-tag'
+  pod 'Automattic-Tracks-iOS', '~> 0.4.5'
 
   pod 'Gridicons', '~> 1.0'
 
@@ -101,6 +101,8 @@ def networking_pods
   pod 'Alamofire', '~> 4.8'
   pod 'CocoaLumberjack', '~> 3.5'
   pod 'CocoaLumberjack/Swift', '~> 3.5'
+
+  pod 'Sourcery', '~> 0.18', :configuration => 'Debug'
 
   # Used for HTML parsing
   aztec

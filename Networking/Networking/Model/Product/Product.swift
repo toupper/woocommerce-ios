@@ -3,7 +3,7 @@ import Foundation
 
 /// Represents a Product Entity.
 ///
-public struct Product: Codable {
+public struct Product: Codable, GeneratedCopiable {
     public let siteID: Int64
     public let productID: Int64
     public let name: String
@@ -457,6 +457,9 @@ public struct Product: Codable {
         try container.encode(backordersKey, forKey: .backordersKey)
         try container.encode(stockStatusKey, forKey: .stockStatusKey)
 
+        // Categories
+        try container.encode(categories, forKey: .categories)
+
         // Brief description (short description).
         try container.encode(briefDescription, forKey: .briefDescription)
 
@@ -467,6 +470,10 @@ public struct Product: Codable {
         try container.encode(slug, forKey: .slug)
         try container.encode(purchaseNote, forKey: .purchaseNote)
         try container.encode(menuOrder, forKey: .menuOrder)
+
+        // External link for external/affiliate products.
+        try container.encode(externalURL, forKey: .externalURL)
+        try container.encode(buttonText, forKey: .buttonText)
     }
 }
 

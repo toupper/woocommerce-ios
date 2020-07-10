@@ -15,8 +15,10 @@ final class MockProduct {
                  know and we&#8217;ll send you our large group rate.</p>\n<p>GROUP RATES</p>\n<p>Reserve your event for up to 30 guests \
                  for $100.</p>\n
                  """,
+                 fullDescription: String? = "<p>This is the party room!</p>\n",
                  productShippingClass: ProductShippingClass? = nil,
                  backordersSetting: ProductBackordersSetting = .notAllowed,
+                 externalURL: String? = "https://example.com",
                  productType: ProductType = .simple,
                  manageStock: Bool = false,
                  sku: String? = "",
@@ -53,7 +55,7 @@ final class MockProduct {
                    statusKey: status.rawValue,
                    featured: featured,
                    catalogVisibilityKey: catalogVisibility.rawValue,
-                   fullDescription: "<p>This is the party room!</p>\n",
+                   fullDescription: fullDescription,
                    briefDescription: briefDescription,
                    sku: sku,
                    price: "0",
@@ -68,7 +70,7 @@ final class MockProduct {
                    downloadLimit: -1,
                    downloadExpiry: -1,
                    buttonText: "",
-                   externalURL: "http://somewhere.com",
+                   externalURL: externalURL,
                    taxStatusKey: taxStatus.rawValue,
                    taxClass: taxClass,
                    manageStock: manageStock,

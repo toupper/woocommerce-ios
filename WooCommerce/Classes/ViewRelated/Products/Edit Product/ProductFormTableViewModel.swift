@@ -17,6 +17,9 @@ enum ProductFormSection {
         case inventory(viewModel: ViewModel)
         case categories(viewModel: ViewModel)
         case briefDescription(viewModel: ViewModel)
+        case externalURL(viewModel: ViewModel)
+        case sku(viewModel: ViewModel)
+        case groupedProducts(viewModel: ViewModel)
 
         struct ViewModel {
             let icon: UIImage

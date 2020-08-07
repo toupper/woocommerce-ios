@@ -257,6 +257,13 @@ public extension StorageType {
         return allObjects(ofType: Product.self, matching: predicate, sortedBy: [descriptor])
     }
 
+    /// Retrieves all of the stored Products matching the provided array products ids from the provided SiteID
+    ///
+    func loadProducts(siteID: Int64, productsIDs: [Int64]) -> [Product] {
+        let predicate = NSPredicate(format: "siteID = %ld AND productID IN %@", siteID, productsIDs)
+        return allObjects(ofType: Product.self, matching: predicate, sortedBy: nil)
+    }
+
     /// Retrieves a stored Product for the provided siteID.
     ///
     func loadProduct(siteID: Int64, productID: Int64) -> Product? {
@@ -312,10 +319,17 @@ public extension StorageType {
         return firstObject(ofType: ProductSearchResults.self, matching: predicate)
     }
 
+    /// Retrieves the all of the stored Product Tags for a `siteID`.
+    ///
+    func loadProductTags(siteID: Int64) -> [ProductTag] {
+        let predicate = NSPredicate(format: "siteID = %ld", siteID)
+        return allObjects(ofType: ProductTag.self, matching: predicate, sortedBy: nil)
+    }
+
     /// Retrieves the Stored Product Tag.
     ///
-    func loadProductTag(siteID: Int64, productID: Int64, tagID: Int64) -> ProductTag? {
-        let predicate = NSPredicate(format: "product.siteID = %ld AND product.productID = %ld AND tagID = %ld", siteID, productID, tagID)
+    func loadProductTag(siteID: Int64, tagID: Int64) -> ProductTag? {
+        let predicate = NSPredicate(format: "siteID = %ld AND tagID = %ld", siteID, tagID)
         return firstObject(ofType: ProductTag.self, matching: predicate)
     }
 

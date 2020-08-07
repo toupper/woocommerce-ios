@@ -380,7 +380,7 @@ final class OrdersViewModelTests: XCTestCase {
         viewModel.activateAndForwardUpdates(to: UITableView())
 
         // Act
-        let notification = ForegroundNotification(noteID: 1, kind: .storeOrder, message: "")
+        let notification = PushNotification(noteID: 1, kind: .storeOrder, message: "")
         pushNotificationsManager.sendForegroundNotification(notification)
 
         // Assert
@@ -400,7 +400,7 @@ final class OrdersViewModelTests: XCTestCase {
         viewModel.activateAndForwardUpdates(to: UITableView())
 
         // Act
-        let notification = ForegroundNotification(noteID: 1, kind: .comment, message: "")
+        let notification = PushNotification(noteID: 1, kind: .comment, message: "")
         pushNotificationsManager.sendForegroundNotification(notification)
 
         // Assert
@@ -415,8 +415,8 @@ private extension OrdersViewModel {
     ///
     var fetchedOrders: [Yosemite.Order] {
         (0..<numberOfSections).flatMap { section in
-            (0..<numberOfRows(in: section)).map { row in
-                detailsViewModel(at: IndexPath(row: row, section: section)).order
+            (0..<numberOfRows(in: section)).compactMap { row in
+                detailsViewModel(at: IndexPath(row: row, section: section))?.order
             }
         }
     }

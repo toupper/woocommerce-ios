@@ -8,7 +8,7 @@ public enum ProductAction: Action {
 
     /// Searches products that contain a given keyword.
     ///
-    case searchProducts(siteID: Int64, keyword: String, pageNumber: Int, pageSize: Int, onCompletion: (Error?) -> Void)
+    case searchProducts(siteID: Int64, keyword: String, pageNumber: Int, pageSize: Int, excludedProductIDs: [Int64] = [], onCompletion: (Error?) -> Void)
 
     /// Synchronizes the Products matching the specified criteria.
     ///
@@ -19,6 +19,8 @@ public enum ProductAction: Action {
         productStatus: ProductStatus?,
         productType: ProductType?,
         sortOrder: ProductsSortOrder,
+        excludedProductIDs: [Int64] = [],
+        shouldDeleteStoredProductsOnFirstPage: Bool = true,
         onCompletion: (Error?) -> Void)
 
     /// Retrieves the specified Product.
@@ -27,7 +29,11 @@ public enum ProductAction: Action {
 
     /// Retrieves a specified list of Products.
     ///
-    case retrieveProducts(siteID: Int64, productIDs: [Int64], onCompletion: (Result<[Product], Error>) -> Void)
+    case retrieveProducts(siteID: Int64,
+        productIDs: [Int64],
+        pageNumber: Int = ProductsRemote.Default.pageNumber,
+        pageSize: Int = ProductsRemote.Default.pageSize,
+        onCompletion: (Result<[Product], Error>) -> Void)
 
     /// Deletes all of the cached products.
     ///
@@ -39,7 +45,7 @@ public enum ProductAction: Action {
 
     /// Updates a specified Product.
     ///
-    case updateProduct(product: Product, onCompletion: (Product?, ProductUpdateError?) -> Void)
+    case updateProduct(product: Product, onCompletion: (Result<Product, ProductUpdateError>) -> Void)
 
     /// Checks whether a Product SKU is valid against other Products in the store.
     ///

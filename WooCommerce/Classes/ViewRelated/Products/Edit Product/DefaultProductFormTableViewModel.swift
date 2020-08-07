@@ -26,6 +26,7 @@ private extension DefaultProductFormTableViewModel {
     mutating func configureSections(product: Product, actionsFactory: ProductFormActionsFactory) {
         sections = [.primaryFields(rows: primaryFieldRows(product: product, actions: actionsFactory.primarySectionActions())),
                     .settings(rows: settingsRows(product: product, actions: actionsFactory.settingsSectionActions()))]
+            .filter { $0.isNotEmpty }
     }
 
     func primaryFieldRows(product: Product, actions: [ProductFormEditAction]) -> [ProductFormSection.PrimaryFieldRow] {
@@ -54,6 +55,8 @@ private extension DefaultProductFormTableViewModel {
                 return .inventory(viewModel: inventorySettingsRow(product: product))
             case .categories:
                 return .categories(viewModel: categoriesRow(product: product))
+            case .tags:
+                return .tags(viewModel: tagsRow(product: product))
             case .briefDescription:
                 return .briefDescription(viewModel: briefDescriptionRow(product: product))
             case .externalURL:
@@ -62,6 +65,8 @@ private extension DefaultProductFormTableViewModel {
                 return .sku(viewModel: skuRow(product: product))
             case .groupedProducts:
                 return .groupedProducts(viewModel: groupedProductsRow(product: product))
+            case .variations:
+                return .variations(viewModel: variationsRow(product: product))
             default:
                 fatalError("Unexpected action in the settings section: \(action)")
             }
@@ -189,6 +194,13 @@ private extension DefaultProductFormTableViewModel {
         return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details)
     }
 
+    func tagsRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+        let icon = UIImage.tagsIcon
+        let title = Constants.tagsTitle
+        let details = product.tagsDescription() ?? Constants.tagsPlaceholder
+        return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details)
+    }
+
     func briefDescriptionRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.briefDescriptionImage
         let title = Constants.briefDescriptionTitle
@@ -245,6 +257,30 @@ private extension DefaultProductFormTableViewModel {
                                                         details: details,
                                                         numberOfLinesForDetails: 1)
     }
+
+    // MARK: Variable products only
+
+    func variationsRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+        let icon = UIImage.variationsImage
+        let title = Constants.variationsTitle
+
+        let attributes = product.attributes
+
+        let format = NSLocalizedString("%1$@ (%2$ld options)", comment: "Format for each Product attribute")
+        let details: String
+        if product.variations.isEmpty {
+            details = Constants.variationsPlaceholder
+        } else {
+            details = attributes
+                .map({ String.localizedStringWithFormat(format, $0.name, $0.options.count) })
+                .joined(separator: "\n")
+        }
+
+        return ProductFormSection.SettingsRow.ViewModel(icon: icon,
+                                                        title: title,
+                                                        details: details,
+                                                        isActionable: product.variations.isNotEmpty)
+    }
 }
 
 private extension DefaultProductFormTableViewModel {
@@ -259,6 +295,8 @@ private extension DefaultProductFormTableViewModel {
                                                              comment: "Title of the Shipping Settings row on Product main screen")
         static let categoriesTitle = NSLocalizedString("Categories",
                                                        comment: "Title of the Categories row on Product main screen")
+        static let tagsTitle = NSLocalizedString("Tags",
+                                                 comment: "Title of the Tags row on Product main screen")
         static let briefDescriptionTitle = NSLocalizedString("Short description",
                                                              comment: "Title of the Short Description row on Product main screen")
         static let skuTitle = NSLocalizedString("SKU",
@@ -309,11 +347,21 @@ private extension DefaultProductFormTableViewModel {
         // Categories
         static let categoriesPlaceholder = NSLocalizedString("Uncategorized",
                                                              comment: "Placeholder of the Product Categories row on Product main screen")
+        // Tags
+        static let tagsPlaceholder = NSLocalizedString("No tags",
+                                                       comment: "Placeholder of the Product Tags row on Product main screen")
 
         // Grouped products
         static let singularGroupedProductFormat = NSLocalizedString("%ld product",
                                                                     comment: "Format of the number of grouped products in singular form")
         static let pluralGroupedProductsFormat = NSLocalizedString("%ld products",
                                                                    comment: "Format of the number of grouped products in plural form")
+
+        // Variations
+        static let variationsTitle =
+            NSLocalizedString("Variations",
+                              comment: "Title of the Product Variations row on Product main screen for a variable product")
+        static let variationsPlaceholder = NSLocalizedString("No variations yet",
+                                                             comment: "Placeholder of the Product Variations row on Product main screen for a variable product")
     }
 }

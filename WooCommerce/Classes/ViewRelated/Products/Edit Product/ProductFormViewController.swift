@@ -282,6 +282,8 @@ private extension ProductFormViewController {
                                                                             self?.editShippingSettings()
                                                                         case .editCategories:
                                                                             self?.editCategories()
+                                                                        case .editTags:
+                                                                            self?.editTags()
                                                                         case .editBriefDescription:
                                                                             self?.editBriefDescription()
                                                                         case .editSKU:
@@ -362,24 +364,22 @@ private extension ProductFormViewController {
         // Updated Product
         if viewModel.hasProductChanged() {
             group.enter()
-            let updateProductAction = ProductAction.updateProduct(product: product) { [weak self] (product, error) in
-                guard let product = product, error == nil else {
-                    let errorDescription = error?.localizedDescription ?? "No error specified"
+
+            viewModel.updateProductRemotely { [weak self] result in
+                switch result {
+                case .failure(let error):
+                    let errorDescription = error.localizedDescription
                     DDLogError("⛔️ Error updating Product: \(errorDescription)")
                     ServiceLocator.analytics.track(.productDetailUpdateError)
                     // Dismisses the in-progress UI then presents the error alert.
                     self?.navigationController?.dismiss(animated: true) {
                         self?.displayError(error: error)
                     }
-                    group.leave()
-                    return
+                case .success:
+                    ServiceLocator.analytics.track(.productDetailUpdateSuccess)
                 }
-                self?.viewModel.resetProduct(product)
-
-                ServiceLocator.analytics.track(.productDetailUpdateSuccess)
                 group.leave()
             }
-            ServiceLocator.stores.dispatch(updateProductAction)
         }
 
 
@@ -532,22 +532,33 @@ extension ProductFormViewController: UITableViewDelegate {
                 ServiceLocator.analytics.track(.productDetailViewInventorySettingsTapped)
                 editInventorySettings()
             case .categories:
-                // TODO-2000 Edit Product M3 analytics
+                // TODO-2509 Edit Product M3 analytics
                 editCategories()
+            case .tags:
+                // TODO-2509 Edit Product M3 analytics
+                editTags()
             case .briefDescription:
                 ServiceLocator.analytics.track(.productDetailViewShortDescriptionTapped)
                 editBriefDescription()
             case .externalURL:
-                // TODO-2000 Edit Product M3 analytics
+                // TODO-2509 Edit Product M3 analytics
                 editExternalLink()
                 break
             case .sku:
-                // TODO-2000 Edit Product M3 analytics
+                // TODO-2509 Edit Product M3 analytics
                 editSKU()
                 break
             case .groupedProducts:
-                // TODO-2199: implement grouped products editing action
+                editGroupedProducts()
                 break
+            case .variations:
+                // TODO-2509 Edit Product M3 analytics
+                guard product.variations.isNotEmpty else {
+                    return
+                }
+                let variationsViewController = ProductVariationsViewController(siteID: product.siteID,
+                                                                               productID: product.productID)
+                show(variationsViewController, sender: self)
             }
         }
     }
@@ -829,6 +840,19 @@ private extension ProductFormViewController {
     }
 }
 
+// MARK: Action - Edit Product Tags
+//
+
+private extension ProductFormViewController {
+    func editTags() {
+        //TODO-2081: add action
+    }
+
+    func onEditTagsCompletion(tags: [ProductTag]) {
+        //TODO-2081: manage completion in editTags()
+    }
+}
+
 // MARK: Action - Edit Product SKU
 //
 private extension ProductFormViewController {
@@ -843,12 +867,35 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        // TODO-2000: Edit Product M3 analytics
+        // TODO-2509: Edit Product M3 analytics
         let hasChangedData = sku != product.sku
         guard hasChangedData else {
             return
         }
         viewModel.updateSKU(sku)
+    }
+}
+
+// MARK: Action - Edit Grouped Products (Grouped Products Only)
+//
+private extension ProductFormViewController {
+    func editGroupedProducts() {
+        let viewController = GroupedProductsViewController(product: product) { [weak self] groupedProductIDs in
+            self?.onEditGroupedProductsCompletion(groupedProductIDs: groupedProductIDs)
+        }
+        show(viewController, sender: self)
+    }
+
+    func onEditGroupedProductsCompletion(groupedProductIDs: [Int64]) {
+        defer {
+            navigationController?.popViewController(animated: true)
+        }
+        // TODO-2000: Edit Product M3 analytics
+        let hasChangedData = groupedProductIDs != product.groupedProducts
+        guard hasChangedData else {
+            return
+        }
+        viewModel.updateGroupedProductIDs(groupedProductIDs)
     }
 }
 

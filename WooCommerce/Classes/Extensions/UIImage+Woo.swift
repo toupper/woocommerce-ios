@@ -53,6 +53,12 @@ extension UIImage {
         return UIImage.gridicon(.folder).imageFlippedForRightToLeftLayoutDirection()
     }
 
+    /// Product tags Icon
+    ///
+    static var tagsIcon: UIImage {
+        return UIImage.gridicon(.tag).imageFlippedForRightToLeftLayoutDirection()
+    }
+
     /// Add Image icon
     ///
     static var addImage: UIImage {
@@ -64,6 +70,13 @@ extension UIImage {
     ///
     static var checkmarkImage: UIImage {
         return UIImage.gridicon(.checkmark)
+    }
+
+    /// Checkmark image that is shown in a cell's image overlay
+    ///
+    static var checkmarkInCellImageOverlay: UIImage {
+        return UIImage.gridicon(.checkmark, size: CGSize(width: 22, height: 22))
+            .imageWithTintColor(.listBackground)!
     }
 
     /// WooCommerce Styled Checkmark
@@ -117,6 +130,12 @@ extension UIImage {
         return UIImage.gridicon(.crossCircle)
             .imageWithTintColor(tintColor)!
             .imageFlippedForRightToLeftLayoutDirection()
+    }
+
+    /// Delete cell image shown in a cell's accessory view
+    ///
+    static var deleteCellImage: UIImage {
+        return UIImage.gridicon(.cross, size: CGSize(width: 22, height: 22))
     }
 
     /// Ellipsis Icon
@@ -399,7 +418,19 @@ extension UIImage {
 
 
     static var syncImage: UIImage {
-        return UIImage.gridicon(.sync).imageFlippedForRightToLeftLayoutDirection()
+        return UIImage(imageLiteralResourceName: "icon-sync-dot")
+    }
+
+    /// Variations Icon
+    ///
+    static var variationsImage: UIImage {
+        return UIImage.gridicon(.types).imageFlippedForRightToLeftLayoutDirection()
+    }
+
+    /// No store image
+    ///
+    static var noStoreImage: UIImage {
+        return UIImage(imageLiteralResourceName: "woo-no-store").imageFlippedForRightToLeftLayoutDirection()
     }
 
     /// Creates a bitmap image of the Woo "bubble" logo based on a vector image in our asset catalog.

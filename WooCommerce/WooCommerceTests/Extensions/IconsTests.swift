@@ -35,6 +35,10 @@ final class IconsTests: XCTestCase {
         XCTAssertNotNil(UIImage.checkmarkImage)
     }
 
+    func testCheckmarkInCellImageOverlayIsNotNil() {
+        XCTAssertNotNil(UIImage.checkmarkInCellImageOverlay)
+    }
+
     func testCheckmarkStyledImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.checkmarkStyledImage)
     }
@@ -65,6 +69,15 @@ final class IconsTests: XCTestCase {
 
     func testDeleteImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.deleteImage)
+    }
+
+    func testDeleteCellImageIconIsNotNil() {
+        XCTAssertNotNil(UIImage.deleteCellImage)
+    }
+
+    func testDeleteCellImageIconDefaultSize() {
+        let deleteCellImage = UIImage.deleteCellImage
+        XCTAssertEqual(deleteCellImage.size, CGSize(width: 22, height: 22))
     }
 
     func testEllipsisImageIconIsNotNil() {
@@ -232,6 +245,10 @@ final class IconsTests: XCTestCase {
         XCTAssertNotNil(UIImage.trashImage)
     }
 
+    func testVariationsImageIconIsNotNil() {
+        XCTAssertNotNil(UIImage.variationsImage)
+    }
+
     func testWooLogoImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.wooLogoImage())
     }
@@ -263,7 +280,20 @@ final class IconsTests: XCTestCase {
         XCTAssertEqual(categoriesIcon.size, Gridicon.defaultSize)
     }
 
+    func testTagsIconIsNotNil() {
+        XCTAssertNotNil(UIImage.tagsIcon)
+    }
+
+    func testTagsIconHasDefaultSize() {
+        let tagsIcon = UIImage.tagsIcon
+        XCTAssertEqual(tagsIcon.size, Gridicon.defaultSize)
+    }
+
     func testSyncIconIsNotNil() {
         XCTAssertNotNil(UIImage.syncImage)
+    }
+
+    func testNoStoreImageIsNotNil() {
+        XCTAssertNotNil(UIImage.noStoreImage)
     }
 }

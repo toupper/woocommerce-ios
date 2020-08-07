@@ -9,12 +9,15 @@ enum ProductFormEditAction {
     case inventorySettings
     case shippingSettings
     case categories
+    case tags
     case briefDescription
     // Affiliate products only
     case sku
     case externalURL
     // Grouped products only
     case groupedProducts
+    // Variable products only
+    case variations
 }
 
 /// Creates actions for different sections/UI on the product form.
@@ -69,6 +72,8 @@ private extension ProductFormActionsFactory {
             return allSettingsSectionActionsForAffiliateProduct()
         case .grouped:
             return allSettingsSectionActionsForGroupedProduct()
+        case .variable:
+            return allSettingsSectionActionsForVariableProduct()
         default:
             assertionFailure("Product of type \(product.productType) should not be editable.")
             return []
@@ -79,12 +84,14 @@ private extension ProductFormActionsFactory {
         let shouldShowShippingSettingsRow = product.isShippingEnabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
+        let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .priceSettings,
             shouldShowShippingSettingsRow ? .shippingSettings: nil,
             .inventorySettings,
             shouldShowCategoriesRow ? .categories: nil,
+            shouldShowTagsRow ? .tags: nil,
             shouldShowBriefDescriptionRow ? .briefDescription: nil
         ]
         return actions.compactMap { $0 }
@@ -93,12 +100,14 @@ private extension ProductFormActionsFactory {
     func allSettingsSectionActionsForAffiliateProduct() -> [ProductFormEditAction] {
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
+        let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .priceSettings,
             .externalURL,
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
+            shouldShowTagsRow ? .tags: nil,
             shouldShowBriefDescriptionRow ? .briefDescription: nil
         ]
         return actions.compactMap { $0 }
@@ -107,11 +116,27 @@ private extension ProductFormActionsFactory {
     func allSettingsSectionActionsForGroupedProduct() -> [ProductFormEditAction] {
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
+        let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .groupedProducts,
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
+            shouldShowTagsRow ? .tags: nil,
+            shouldShowBriefDescriptionRow ? .briefDescription: nil
+        ]
+        return actions.compactMap { $0 }
+    }
+
+    func allSettingsSectionActionsForVariableProduct() -> [ProductFormEditAction] {
+        let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
+        let shouldShowCategoriesRow = isEditProductsRelease3Enabled
+        let shouldShowTagsRow = isEditProductsRelease3Enabled
+
+        let actions: [ProductFormEditAction?] = [
+            .variations,
+            shouldShowCategoriesRow ? .categories: nil,
+            shouldShowTagsRow ? .tags: nil,
             shouldShowBriefDescriptionRow ? .briefDescription: nil
         ]
         return actions.compactMap { $0 }
@@ -136,6 +161,8 @@ private extension ProductFormActionsFactory {
                 product.dimensions.height.isNotEmpty || product.dimensions.width.isNotEmpty || product.dimensions.length.isNotEmpty
         case .categories:
             return product.categories.isNotEmpty
+        case .tags:
+            return product.tags.isNotEmpty
         case .briefDescription:
             return product.briefDescription.isNilOrEmpty == false
         // Affiliate products only.
@@ -147,6 +174,10 @@ private extension ProductFormActionsFactory {
         // Grouped products only.
         case .groupedProducts:
             // The grouped products action is always visible in the settings section for a grouped product.
+            return true
+        // Variable products only.
+        case .variations:
+            // The variations row is always visible in the settings section for a variable product.
             return true
         default:
             return false

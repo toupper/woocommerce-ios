@@ -115,7 +115,7 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         let newSKU = "94115"
         let newManageStock = !product.manageStock
         let newSoldIndividually = !product.soldIndividually
-        let newStockQuantity = 17
+        let newStockQuantity: Int64 = 17
         let newBackordersSetting = ProductBackordersSetting.allowedAndNotifyCustomer
         let newStockStatus = ProductStockStatus.onBackOrder
         viewModel.updateInventorySettings(sku: newSKU,
@@ -178,6 +178,26 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         XCTAssertEqual(viewModel.product.categories, newCategories)
     }
 
+    func testUpdatingProductTags() {
+        // Arrange
+        let product = MockProduct().product()
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
+        let viewModel = ProductFormViewModel(product: product,
+                                             productImageActionHandler: productImageActionHandler,
+                                             isEditProductsRelease2Enabled: true,
+                                             isEditProductsRelease3Enabled: true)
+
+        // Action
+        let tagID = Int64(1234)
+        let name = "Test tag"
+        let slug = "test-tag"
+        let newTags = [ProductTag(siteID: 0, tagID: tagID, name: name, slug: slug)]
+        viewModel.updateProductTags(newTags)
+
+        // Assert
+        XCTAssertEqual(viewModel.product.tags, newTags)
+    }
+
     func testUpdatingBriefDescription() {
         // Arrange
         let product = MockProduct().product()
@@ -209,6 +229,8 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         let featured = true
         let password = ""
         let catalogVisibility = "search"
+        let virtual = true
+        let reviewsAllowed = true
         let slug = "this-is-a-test"
         let purchaseNote = "This is a purchase note"
         let menuOrder = 0
@@ -216,6 +238,8 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
                                               featured: featured,
                                               password: password,
                                               catalogVisibility: .search,
+                                              virtual: virtual,
+                                              reviewsAllowed: reviewsAllowed,
                                               slug: slug,
                                               purchaseNote: purchaseNote,
                                               menuOrder: menuOrder)
@@ -225,6 +249,8 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         XCTAssertEqual(viewModel.product.statusKey, newStatus)
         XCTAssertEqual(viewModel.product.featured, featured)
         XCTAssertEqual(viewModel.product.catalogVisibilityKey, catalogVisibility)
+        XCTAssertEqual(viewModel.product.virtual, virtual)
+        XCTAssertEqual(viewModel.product.reviewsAllowed, reviewsAllowed)
         XCTAssertEqual(viewModel.product.slug, slug)
         XCTAssertEqual(viewModel.product.purchaseNote, purchaseNote)
         XCTAssertEqual(viewModel.product.menuOrder, menuOrder)
@@ -264,6 +290,23 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         // Assert
         XCTAssertEqual(viewModel.product.externalURL, externalURL)
         XCTAssertEqual(viewModel.product.buttonText, buttonText)
+    }
+
+    func testUpdatingGroupedProductIDs() {
+        // Arrange
+        let product = MockProduct().product()
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
+        let viewModel = ProductFormViewModel(product: product,
+                                             productImageActionHandler: productImageActionHandler,
+                                             isEditProductsRelease2Enabled: true,
+                                             isEditProductsRelease3Enabled: false)
+
+        // Action
+        let groupedProductIDs: [Int64] = [630, 22]
+        viewModel.updateGroupedProductIDs(groupedProductIDs)
+
+        // Assert
+        XCTAssertEqual(viewModel.product.groupedProducts, groupedProductIDs)
     }
 }
 

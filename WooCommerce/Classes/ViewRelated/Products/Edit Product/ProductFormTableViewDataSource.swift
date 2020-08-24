@@ -18,6 +18,7 @@ final class ProductFormTableViewDataSource: NSObject {
     private let viewModel: ProductFormTableViewModel
     private let canEditImages: Bool
     private var onNameChange: ((_ name: String?) -> Void)?
+    private var onStatusChange: ((_ isEnabled: Bool) -> Void)?
     private var onAddImage: (() -> Void)?
 
     private let productImageStatuses: [ProductImageStatus]
@@ -34,8 +35,9 @@ final class ProductFormTableViewDataSource: NSObject {
         super.init()
     }
 
-    func configureActions(onNameChange: ((_ name: String?) -> Void)?, onAddImage: @escaping () -> Void) {
+    func configureActions(onNameChange: ((_ name: String?) -> Void)?, onStatusChange: ((_ isEnabled: Bool) -> Void)?, onAddImage: @escaping () -> Void) {
         self.onNameChange = onNameChange
+        self.onStatusChange = onStatusChange
         self.onAddImage = onAddImage
     }
 }
@@ -80,16 +82,18 @@ private extension ProductFormTableViewDataSource {
 private extension ProductFormTableViewDataSource {
     func configureCellInPrimaryFieldsSection(_ cell: UITableViewCell, row: ProductFormSection.PrimaryFieldRow) {
         switch row {
-        case .images(let product):
-            configureImages(cell: cell, product: product)
+        case .images:
+            configureImages(cell: cell)
         case .name(let name):
             configureName(cell: cell, name: name)
+        case .variationName(let name):
+            configureVariationName(cell: cell, name: name)
         case .description(let description):
             configureDescription(cell: cell, description: description)
         }
     }
 
-    func configureImages(cell: UITableViewCell, product: Product) {
+    func configureImages(cell: UITableViewCell) {
         guard let cell = cell as? ProductImagesHeaderTableViewCell else {
             fatalError()
         }
@@ -108,8 +112,9 @@ private extension ProductFormTableViewDataSource {
             cell.configure(with: productImageStatuses, config: .extendedAddImages, productUIImageLoader: productUIImageLoader)
         }
 
-        cell.onImageSelected = { (productImage, indexPath) in
-            // TODO: open image detail
+        cell.onImageSelected = { [weak self] (productImage, indexPath) in
+            ServiceLocator.analytics.track(.productDetailAddImageTapped)
+            self?.onAddImage?()
         }
         cell.onAddImage = { [weak self] in
             ServiceLocator.analytics.track(.productDetailAddImageTapped)
@@ -125,13 +130,24 @@ private extension ProductFormTableViewDataSource {
         cell.accessoryType = .none
 
         let placeholder = NSLocalizedString("Title", comment: "Placeholder in the Product Title row on Product form screen.")
-
         let viewModel = TextFieldTableViewCell.ViewModel(text: name, placeholder: placeholder, onTextChange: { [weak self] newName in
             self?.onNameChange?(newName)
             }, onTextDidBeginEditing: {
                 ServiceLocator.analytics.track(.productDetailViewProductNameTapped)
         }, inputFormatter: nil, keyboardType: .default)
         cell.configure(viewModel: viewModel)
+    }
+
+    func configureVariationName(cell: UITableViewCell, name: String) {
+        guard let cell = cell as? BasicTableViewCell else {
+            fatalError()
+        }
+
+        cell.accessoryType = .none
+        cell.textLabel?.text = name
+        cell.textLabel?.applyHeadlineStyle()
+        cell.textLabel?.textColor = .text
+        cell.textLabel?.numberOfLines = 0
     }
 
     func configureDescription(cell: UITableViewCell, description: String?) {
@@ -160,17 +176,59 @@ private extension ProductFormTableViewDataSource {
 //
 private extension ProductFormTableViewDataSource {
     func configureCellInSettingsFieldsSection(_ cell: UITableViewCell, row: ProductFormSection.SettingsRow) {
-        guard let cell = cell as? ImageAndTitleAndTextTableViewCell else {
-            fatalError()
-        }
         switch row {
-        case .price(let viewModel), .inventory(let viewModel), .shipping(let viewModel), .categories(let viewModel), .tags(let viewModel),
-             .briefDescription(let viewModel), .externalURL(let viewModel), .sku(let viewModel), .groupedProducts(let viewModel), .variations(let viewModel):
+        case .price(let viewModel),
+             .inventory(let viewModel),
+             .shipping(let viewModel),
+             .categories(let viewModel),
+             .tags(let viewModel),
+             .briefDescription(let viewModel),
+             .externalURL(let viewModel),
+             .sku(let viewModel),
+             .groupedProducts(let viewModel),
+             .variations(let viewModel):
             configureSettings(cell: cell, viewModel: viewModel)
+        case .reviews(let viewModel, let ratingCount, let averageRating):
+            configureReviews(cell: cell, viewModel: viewModel, ratingCount: ratingCount, averageRating: averageRating)
+        case .status(let viewModel):
+            configureSettingsRowWithASwitch(cell: cell, viewModel: viewModel)
         }
     }
 
-    func configureSettings(cell: ImageAndTitleAndTextTableViewCell, viewModel: ProductFormSection.SettingsRow.ViewModel) {
+    func configureSettings(cell: UITableViewCell, viewModel: ProductFormSection.SettingsRow.ViewModel) {
+        guard let cell = cell as? ImageAndTitleAndTextTableViewCell else {
+            fatalError()
+        }
         cell.updateUI(viewModel: viewModel.toCellViewModel())
+    }
+
+    func configureReviews(cell: UITableViewCell,
+                          viewModel: ProductFormSection.SettingsRow.ViewModel,
+                          ratingCount: Int,
+                          averageRating: String) {
+        guard let cell = cell as? ProductReviewsTableViewCell else {
+            fatalError()
+        }
+
+        cell.configure(image: viewModel.icon,
+                       title: viewModel.title ?? "",
+                       details: viewModel.details ?? "",
+                       ratingCount: ratingCount,
+                       averageRating: averageRating)
+        if ratingCount > 0 {
+            cell.accessoryType = .disclosureIndicator
+        }
+    }
+
+    func configureSettingsRowWithASwitch(cell: UITableViewCell, viewModel: ProductFormSection.SettingsRow.SwitchableViewModel) {
+        guard let cell = cell as? ImageAndTitleAndTextTableViewCell else {
+            fatalError()
+        }
+
+        let switchableViewModel = ImageAndTitleAndTextTableViewCell.SwitchableViewModel(viewModel: viewModel.viewModel.toCellViewModel(),
+                                                                                        isSwitchOn: viewModel.isSwitchOn) { [weak self] isSwitchOn in
+                                                                                            self?.onStatusChange?(isSwitchOn)
+        }
+        cell.updateUI(switchableViewModel: switchableViewModel)
     }
 }

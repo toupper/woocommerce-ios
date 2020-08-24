@@ -561,7 +561,7 @@ final class ProductStoreTests: XCTestCase {
         let storageProduct1 = viewStorage.loadProduct(siteID: sampleSiteID, productID: sampleProductID)
         XCTAssertEqual(storageProduct1?.toReadOnly(), sampleProductMutated())
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.Product.self), 1)
-        XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductTag.self, matching: NSPredicate(format: "siteID == %lld", sampleSiteID)), 5)
+        XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductTag.self, matching: NSPredicate(format: "siteID == %lld", sampleSiteID)), 10)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductCategory.self), 2)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductImage.self), 2)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductDimensions.self), 1)
@@ -604,7 +604,7 @@ final class ProductStoreTests: XCTestCase {
         let storageProduct1 = viewStorage.loadProduct(siteID: sampleSiteID, productID: sampleProductID)
         XCTAssertEqual(storageProduct1?.toReadOnly(), sampleProductMutated())
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.Product.self), 2)
-        XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductTag.self, matching: NSPredicate(format: "siteID == %lld", sampleSiteID)), 5)
+        XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductTag.self, matching: NSPredicate(format: "siteID == %lld", sampleSiteID)), 10)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductCategory.self), 3)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductImage.self), 3)
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.ProductDimensions.self), 2)
@@ -1073,6 +1073,31 @@ final class ProductStoreTests: XCTestCase {
         // Assert
         XCTAssertEqual(retrievedProducts, [expectedProduct])
         XCTAssertEqual(viewStorage.countObjects(ofType: Storage.Product.self), 1)
+    }
+
+    /// Verifies that ProductAction.retrieveProducts with a page number and size makes a network request that includes these params.
+    ///
+    func testRetrievingProductsMakesANetworkRequestWithTheExpectedPageNumberAndSize() {
+        // Arrange
+        let productStore = ProductStore(dispatcher: dispatcher, storageManager: storageManager, network: network)
+
+        // Action
+        let pageNumber = 6
+        let pageSize = 36
+        let action = ProductAction.retrieveProducts(siteID: sampleSiteID, productIDs: [sampleProductID], pageNumber: pageNumber, pageSize: pageSize) { _ in }
+        productStore.onAction(action)
+
+        // Assert
+        guard let pathComponents = network.pathComponents else {
+            XCTFail("Cannot parse path from the API request")
+            return
+        }
+
+        let expectedPageNumberParam = "page=\(pageNumber)"
+        XCTAssertTrue(pathComponents.contains(expectedPageNumberParam), "Expected to have param: \(expectedPageNumberParam)")
+
+        let expectedPageSizeParam = "per_page=\(pageSize)"
+        XCTAssertTrue(pathComponents.contains(expectedPageSizeParam), "Expected to have param: \(expectedPageSizeParam)")
     }
 
     /// Verifies that ProductAction.retrieveProducts always returns an empty result for an empty array of product IDs.

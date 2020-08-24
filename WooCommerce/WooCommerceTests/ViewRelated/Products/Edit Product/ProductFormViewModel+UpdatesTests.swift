@@ -9,8 +9,9 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
     func testUpdatingName() {
         // Arrange
         let product = MockProduct().product(name: "Test")
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -20,14 +21,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateName(newName)
 
         // Assert
-        XCTAssertEqual(viewModel.product.name, newName)
+        XCTAssertEqual(viewModel.productModel.name, newName)
     }
 
     func testUpdatingDescription() {
         // Arrange
         let product = MockProduct().product(fullDescription: "Test")
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -37,14 +39,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateDescription(newDescription)
 
         // Assert
-        XCTAssertEqual(viewModel.product.fullDescription, newDescription)
+        XCTAssertEqual(viewModel.productModel.description, newDescription)
     }
 
     func testUpdatingShippingSettings() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -61,20 +64,21 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateShippingSettings(weight: newWeight, dimensions: newDimensions, shippingClass: newShippingClass)
 
         // Assert
-        XCTAssertEqual(viewModel.product.fullDescription, product.fullDescription)
-        XCTAssertEqual(viewModel.product.name, product.name)
-        XCTAssertEqual(viewModel.product.weight, newWeight)
-        XCTAssertEqual(viewModel.product.dimensions, newDimensions)
-        XCTAssertEqual(viewModel.product.shippingClass, newShippingClass.slug)
-        XCTAssertEqual(viewModel.product.shippingClassID, newShippingClass.shippingClassID)
-        XCTAssertEqual(viewModel.product.productShippingClass, newShippingClass)
+        XCTAssertEqual(viewModel.productModel.description, product.fullDescription)
+        XCTAssertEqual(viewModel.productModel.name, product.name)
+        XCTAssertEqual(viewModel.productModel.weight, newWeight)
+        XCTAssertEqual(viewModel.productModel.dimensions, newDimensions)
+        XCTAssertEqual(viewModel.productModel.shippingClass, newShippingClass.slug)
+        XCTAssertEqual(viewModel.productModel.shippingClassID, newShippingClass.shippingClassID)
+        XCTAssertEqual(viewModel.productModel.shippingClass, newShippingClass.slug)
     }
 
     func testUpdatingPriceSettings() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -94,19 +98,20 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
                                       taxClass: newTaxClass)
 
         // Assert
-        XCTAssertEqual(viewModel.product.regularPrice, newRegularPrice)
-        XCTAssertEqual(viewModel.product.salePrice, newSalePrice)
-        XCTAssertEqual(viewModel.product.dateOnSaleStart, newDateOnSaleStart)
-        XCTAssertEqual(viewModel.product.dateOnSaleEnd, newDateOnSaleEnd)
-        XCTAssertEqual(viewModel.product.taxStatusKey, newTaxStatus.rawValue)
-        XCTAssertEqual(viewModel.product.taxClass, newTaxClass.slug)
+        XCTAssertEqual(viewModel.productModel.regularPrice, newRegularPrice)
+        XCTAssertEqual(viewModel.productModel.salePrice, newSalePrice)
+        XCTAssertEqual(viewModel.productModel.dateOnSaleStart, newDateOnSaleStart)
+        XCTAssertEqual(viewModel.productModel.dateOnSaleEnd, newDateOnSaleEnd)
+        XCTAssertEqual(viewModel.productModel.taxStatusKey, newTaxStatus.rawValue)
+        XCTAssertEqual(viewModel.productModel.taxClass, newTaxClass.slug)
     }
 
     func testUpdatingInventorySettings() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -126,19 +131,20 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
                                           stockStatus: newStockStatus)
 
         // Assert
-        XCTAssertEqual(viewModel.product.sku, newSKU)
-        XCTAssertEqual(viewModel.product.manageStock, newManageStock)
-        XCTAssertEqual(viewModel.product.soldIndividually, newSoldIndividually)
-        XCTAssertEqual(viewModel.product.stockQuantity, newStockQuantity)
-        XCTAssertEqual(viewModel.product.backordersSetting, newBackordersSetting)
-        XCTAssertEqual(viewModel.product.productStockStatus, newStockStatus)
+        XCTAssertEqual(viewModel.productModel.sku, newSKU)
+        XCTAssertEqual(viewModel.productModel.manageStock, newManageStock)
+        XCTAssertEqual(viewModel.productModel.product.soldIndividually, newSoldIndividually)
+        XCTAssertEqual(viewModel.productModel.stockQuantity, newStockQuantity)
+        XCTAssertEqual(viewModel.productModel.backordersSetting, newBackordersSetting)
+        XCTAssertEqual(viewModel.productModel.stockStatus, newStockStatus)
     }
 
     func testUpdatingImages() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -154,14 +160,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateImages(newImages)
 
         // Assert
-        XCTAssertEqual(viewModel.product.images, newImages)
+        XCTAssertEqual(viewModel.productModel.images, newImages)
     }
 
     func testUpdatingProductCategories() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: true)
@@ -175,14 +182,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateProductCategories(newCategories)
 
         // Assert
-        XCTAssertEqual(viewModel.product.categories, newCategories)
+        XCTAssertEqual(viewModel.productModel.product.categories, newCategories)
     }
 
     func testUpdatingProductTags() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: true)
@@ -195,14 +203,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateProductTags(newTags)
 
         // Assert
-        XCTAssertEqual(viewModel.product.tags, newTags)
+        XCTAssertEqual(viewModel.productModel.product.tags, newTags)
     }
 
     func testUpdatingBriefDescription() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -212,14 +221,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateBriefDescription(newBriefDescription)
 
         // Assert
-        XCTAssertEqual(viewModel.product.briefDescription, newBriefDescription)
+        XCTAssertEqual(viewModel.productModel.shortDescription, newBriefDescription)
     }
 
     func testUpdatingProductSettings() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -246,21 +256,21 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateProductSettings(productSettings)
 
         // Assert
-        XCTAssertEqual(viewModel.product.statusKey, newStatus)
-        XCTAssertEqual(viewModel.product.featured, featured)
-        XCTAssertEqual(viewModel.product.catalogVisibilityKey, catalogVisibility)
-        XCTAssertEqual(viewModel.product.virtual, virtual)
-        XCTAssertEqual(viewModel.product.reviewsAllowed, reviewsAllowed)
-        XCTAssertEqual(viewModel.product.slug, slug)
-        XCTAssertEqual(viewModel.product.purchaseNote, purchaseNote)
-        XCTAssertEqual(viewModel.product.menuOrder, menuOrder)
+        XCTAssertEqual(viewModel.productModel.product.statusKey, newStatus)
+        XCTAssertEqual(viewModel.productModel.product.featured, featured)
+        XCTAssertEqual(viewModel.productModel.product.catalogVisibilityKey, catalogVisibility)
+        XCTAssertEqual(viewModel.productModel.product.reviewsAllowed, reviewsAllowed)
+        XCTAssertEqual(viewModel.productModel.product.slug, slug)
+        XCTAssertEqual(viewModel.productModel.product.purchaseNote, purchaseNote)
+        XCTAssertEqual(viewModel.productModel.product.menuOrder, menuOrder)
     }
 
     func testUpdatingSKU() {
         // Arrange
         let product = MockProduct().product(sku: "")
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -270,14 +280,15 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateSKU(sku)
 
         // Assert
-        XCTAssertEqual(viewModel.product.sku, sku)
+        XCTAssertEqual(viewModel.productModel.sku, sku)
     }
 
     func testUpdatingExternalLink() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -288,15 +299,16 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateExternalLink(externalURL: externalURL, buttonText: buttonText)
 
         // Assert
-        XCTAssertEqual(viewModel.product.externalURL, externalURL)
-        XCTAssertEqual(viewModel.product.buttonText, buttonText)
+        XCTAssertEqual(viewModel.productModel.product.externalURL, externalURL)
+        XCTAssertEqual(viewModel.productModel.product.buttonText, buttonText)
     }
 
     func testUpdatingGroupedProductIDs() {
         // Arrange
         let product = MockProduct().product()
-        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: product)
-        let viewModel = ProductFormViewModel(product: product,
+        let model = EditableProductModel(product: product)
+        let productImageActionHandler = ProductImageActionHandler(siteID: 0, product: model)
+        let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
                                              isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
@@ -306,7 +318,7 @@ final class ProductFormViewModel_UpdatesTests: XCTestCase {
         viewModel.updateGroupedProductIDs(groupedProductIDs)
 
         // Assert
-        XCTAssertEqual(viewModel.product.groupedProducts, groupedProductIDs)
+        XCTAssertEqual(viewModel.productModel.product.groupedProducts, groupedProductIDs)
     }
 }
 

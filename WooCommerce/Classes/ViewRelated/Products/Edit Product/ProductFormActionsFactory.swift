@@ -6,6 +6,7 @@ enum ProductFormEditAction {
     case name
     case description
     case priceSettings
+    case reviews
     case inventorySettings
     case shippingSettings
     case categories
@@ -17,16 +18,19 @@ enum ProductFormEditAction {
     // Grouped products only
     case groupedProducts
     // Variable products only
+    case variationName
     case variations
+    // Variation only
+    case status
 }
 
 /// Creates actions for different sections/UI on the product form.
-struct ProductFormActionsFactory {
-    private let product: Product
+struct ProductFormActionsFactory: ProductFormActionsFactoryProtocol {
+    private let product: EditableProductModel
     private let isEditProductsRelease2Enabled: Bool
     private let isEditProductsRelease3Enabled: Bool
 
-    init(product: Product,
+    init(product: EditableProductModel,
          isEditProductsRelease2Enabled: Bool,
          isEditProductsRelease3Enabled: Bool) {
         self.product = product
@@ -65,7 +69,7 @@ struct ProductFormActionsFactory {
 private extension ProductFormActionsFactory {
     /// All the editable actions in the settings section given the product and feature switches.
     func allSettingsSectionActions() -> [ProductFormEditAction] {
-        switch product.productType {
+        switch product.product.productType {
         case .simple:
             return allSettingsSectionActionsForSimpleProduct()
         case .affiliate:
@@ -75,19 +79,21 @@ private extension ProductFormActionsFactory {
         case .variable:
             return allSettingsSectionActionsForVariableProduct()
         default:
-            assertionFailure("Product of type \(product.productType) should not be editable.")
+            assertionFailure("Product of type \(product.product.productType) should not be editable.")
             return []
         }
     }
 
     func allSettingsSectionActionsForSimpleProduct() -> [ProductFormEditAction] {
-        let shouldShowShippingSettingsRow = product.isShippingEnabled
+        let shouldShowReviewsRow = isEditProductsRelease3Enabled
+        let shouldShowShippingSettingsRow = product.isShippingEnabled()
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .priceSettings,
+            shouldShowReviewsRow ? .reviews: nil,
             shouldShowShippingSettingsRow ? .shippingSettings: nil,
             .inventorySettings,
             shouldShowCategoriesRow ? .categories: nil,
@@ -98,12 +104,14 @@ private extension ProductFormActionsFactory {
     }
 
     func allSettingsSectionActionsForAffiliateProduct() -> [ProductFormEditAction] {
+        let shouldShowReviewsRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .priceSettings,
+            shouldShowReviewsRow ? .reviews: nil,
             .externalURL,
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
@@ -114,12 +122,14 @@ private extension ProductFormActionsFactory {
     }
 
     func allSettingsSectionActionsForGroupedProduct() -> [ProductFormEditAction] {
+        let shouldShowReviewsRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .groupedProducts,
+            shouldShowReviewsRow ? .reviews: nil,
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
@@ -129,12 +139,14 @@ private extension ProductFormActionsFactory {
     }
 
     func allSettingsSectionActionsForVariableProduct() -> [ProductFormEditAction] {
+        let shouldShowReviewsRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
 
         let actions: [ProductFormEditAction?] = [
             .variations,
+            shouldShowReviewsRow ? .reviews: nil,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
             shouldShowBriefDescriptionRow ? .briefDescription: nil
@@ -153,6 +165,9 @@ private extension ProductFormActionsFactory {
         case .priceSettings:
             // The price settings action is always visible in the settings section.
             return true
+        case .reviews:
+            // The reviews action is always visible in the settings section.
+            return true
         case .inventorySettings:
             let hasStockData = product.manageStock ? product.stockQuantity != nil: true
             return product.sku != nil || hasStockData
@@ -160,11 +175,11 @@ private extension ProductFormActionsFactory {
             return product.weight.isNilOrEmpty == false ||
                 product.dimensions.height.isNotEmpty || product.dimensions.width.isNotEmpty || product.dimensions.length.isNotEmpty
         case .categories:
-            return product.categories.isNotEmpty
+            return product.product.categories.isNotEmpty
         case .tags:
-            return product.tags.isNotEmpty
+            return product.product.tags.isNotEmpty
         case .briefDescription:
-            return product.briefDescription.isNilOrEmpty == false
+            return product.shortDescription.isNilOrEmpty == false
         // Affiliate products only.
         case .externalURL:
             // The external URL action is always visible in the settings section for an affiliate product.

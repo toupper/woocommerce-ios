@@ -63,12 +63,18 @@ final class ProductVariationsViewController: UIViewController {
 
     private let siteID: Int64
     private let productID: Int64
+    private let allAttributes: [ProductAttribute]
+    private let parentProductSKU: String?
 
     private let imageService: ImageService = ServiceLocator.imageService
+    private let isEditProductsRelease3Enabled: Bool
 
-    init(siteID: Int64, productID: Int64) {
-        self.siteID = siteID
-        self.productID = productID
+    init(product: Product, isEditProductsRelease3Enabled: Bool) {
+        self.siteID = product.siteID
+        self.productID = product.productID
+        self.allAttributes = product.attributes
+        self.parentProductSKU = product.sku
+        self.isEditProductsRelease3Enabled = isEditProductsRelease3Enabled
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -86,10 +92,6 @@ final class ProductVariationsViewController: UIViewController {
         configureTableView()
         configureSyncingCoordinator()
         registerTableViewCells()
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
 
         syncingCoordinator.synchronizeFirstPage()
     }
@@ -198,10 +200,13 @@ extension ProductVariationsViewController: UITableViewDataSource {
         }
 
         let productVariation = resultsController.object(at: indexPath)
+        let model = EditableProductVariationModel(productVariation: productVariation,
+                                                  allAttributes: allAttributes,
+                                                  parentProductSKU: parentProductSKU)
 
         let currencyCode = CurrencySettings.shared.currencyCode
         let currency = CurrencySettings.shared.symbol(from: currencyCode)
-        let viewModel = ProductsTabProductViewModel(productVariation: productVariation,
+        let viewModel = ProductsTabProductViewModel(productVariationModel: model,
                                                     currency: currency)
         cell.update(viewModel: viewModel, imageService: imageService)
         cell.selectionStyle = .none
@@ -226,6 +231,29 @@ extension ProductVariationsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+
+        if isEditProductsRelease3Enabled {
+            let productVariation = resultsController.object(at: indexPath)
+            let model = EditableProductVariationModel(productVariation: productVariation,
+                                                      allAttributes: allAttributes,
+                                                      parentProductSKU: parentProductSKU)
+
+            let currencyCode = CurrencySettings.shared.currencyCode
+            let currency = CurrencySettings.shared.symbol(from: currencyCode)
+            let productImageActionHandler = ProductImageActionHandler(siteID: productVariation.siteID,
+                                                                      product: model)
+            let viewModel = ProductVariationFormViewModel(productVariation: model,
+                                                          allAttributes: allAttributes,
+                                                          parentProductSKU: parentProductSKU,
+                                                          productImageActionHandler: productImageActionHandler)
+            let viewController = ProductFormViewController(viewModel: viewModel,
+                                                           productImageActionHandler: productImageActionHandler,
+                                                           currency: currency,
+                                                           presentationStyle: .navigationStack,
+                                                           isEditProductsRelease2Enabled: true,
+                                                           isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+            navigationController?.pushViewController(viewController, animated: true)
+        }
     }
 
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {

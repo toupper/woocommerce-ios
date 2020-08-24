@@ -10,9 +10,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForPhysicalSimpleProductWithoutImages() {
         // Arrange
         let product = Fixtures.physicalSimpleProductWithoutImages
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -21,6 +22,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
         let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings,
+                                                                       .reviews,
                                                                        .shippingSettings,
                                                                        .inventorySettings,
                                                                        .categories,
@@ -35,9 +37,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForPhysicalSimpleProductWithImages() {
         // Arrange
         let product = Fixtures.physicalSimpleProductWithImages
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -46,6 +49,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
         let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings,
+                                                                       .reviews,
                                                                        .shippingSettings,
                                                                        .inventorySettings,
                                                                        .categories,
@@ -60,9 +64,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForDownloadableSimpleProduct() {
         // Arrange
         let product = Fixtures.downloadableSimpleProduct
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -70,7 +75,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .inventorySettings, .categories, .tags, .briefDescription]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .reviews, .inventorySettings, .categories, .tags, .briefDescription]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = []
@@ -80,9 +85,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForVirtualSimpleProduct() {
         // Arrange
         let product = Fixtures.virtualSimpleProduct
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -90,7 +96,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .inventorySettings, .categories, .tags, .briefDescription]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .reviews, .inventorySettings, .categories, .tags, .briefDescription]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = []
@@ -100,9 +106,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForAffiliateProduct() {
         // Arrange
         let product = Fixtures.affiliateProduct
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -110,7 +117,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .externalURL]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings, .reviews, .externalURL]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editSKU, .editCategories, .editTags, .editBriefDescription]
@@ -120,9 +127,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForGroupedProduct() {
         // Arrange
         let product = Fixtures.groupedProduct
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -130,7 +138,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.groupedProducts]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.groupedProducts, .reviews]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editSKU, .editCategories, .editTags, .editBriefDescription]
@@ -140,9 +148,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForVariableProductWithoutVariations() {
         // Arrange
         let product = Fixtures.variableProductWithoutVariations
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -150,7 +159,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]
@@ -160,9 +169,10 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForVariableProductWithVariations() {
         // Arrange
         let product = Fixtures.variableProductWithVariations
+        let model = EditableProductModel(product: product)
 
         // Action
-        let factory = ProductFormActionsFactory(product: product,
+        let factory = ProductFormActionsFactory(product: model,
                                                 isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
@@ -170,7 +180,7 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]

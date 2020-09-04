@@ -51,6 +51,10 @@ public enum AppSettingsAction: Action {
     case setStatsVersionLastShown(siteID: Int64,
         statsVersion: StatsVersion)
 
+    /// Clears all the states related to stats version
+    ///
+    case resetStatsVersionStates
+
     /// Loads the user preferred Product feature switch given the latest app settings
     ///
     case loadProductsFeatureSwitch(onCompletion: (Bool) -> Void)
@@ -60,9 +64,9 @@ public enum AppSettingsAction: Action {
     ///
     case setProductsFeatureSwitch(isEnabled: Bool, onCompletion: () -> Void)
 
-    /// Clears all the states related to stats version
+    /// Clears all the app settings on feature switches
     ///
-    case resetStatsVersionStates
+    case resetFeatureSwitches
 
     // MARK: - General App Settings
 
@@ -75,8 +79,11 @@ public enum AppSettingsAction: Action {
     ///
     case setInstallationDateIfNecessary(date: Date, onCompletion: ((Result<Bool, Error>) -> Void))
 
-    /// Saves the `date` as the last known date that the user interacted with the in-app
-    /// feedback prompt (https://git.io/JJ8i0).
+    /// Updates or stores a feedback setting with the provided `type` and `status`.
     ///
-    case setLastFeedbackDate(date: Date, onCompletion: ((Result<Void, Error>) -> Void))
+    case updateFeedbackStatus(type: FeedbackType, status: FeedbackSettings.Status, onCompletion: ((Result<Void, Error>) -> Void))
+
+    /// Returns whether a specific feedback request should be shown to the user.
+    ///
+    case loadFeedbackVisibility(type: FeedbackType, onCompletion: (Result<Bool, Error>) -> Void)
 }

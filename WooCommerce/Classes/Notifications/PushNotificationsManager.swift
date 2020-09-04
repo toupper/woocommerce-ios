@@ -364,7 +364,13 @@ private extension PushNotificationsManager {
         DDLogVerbose("📱 Handling Notification in Inactive State")
 
         if let notification = PushNotification.from(userInfo: userInfo) {
-            configuration.application.presentNotificationDetails(for: Int64(notification.noteID))
+
+            // Handling the product review notifications (`.comment`) has been moved to
+            // `ReviewsCoordinator`. All other push notification handling should be in a coordinator
+            // in the future too.
+            if notification.kind != .comment {
+                configuration.application.presentNotificationDetails(for: Int64(notification.noteID))
+            }
 
             inactiveNotificationsSubject.send(notification)
         }
@@ -514,7 +520,6 @@ private extension PushNotification {
 private enum APNSKey {
     static let aps = "aps"
     static let alert = "alert"
-    static let badge = "badge"
     static let identifier = "note_id"
     static let type = "type"
 }

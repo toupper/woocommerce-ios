@@ -108,6 +108,10 @@ final class IconsTests: XCTestCase {
         XCTAssertNotNil(UIImage.externalImage)
     }
 
+    func testExternalProductImageIconIsNotNil() {
+        XCTAssertNotNil(UIImage.externalProductImage)
+    }
+
     func testFilterImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.filterImage)
     }
@@ -130,6 +134,10 @@ final class IconsTests: XCTestCase {
 
     func testJetpackLogoImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.jetpackLogoImage)
+    }
+
+    func testInfoOutlineImageIconIsNotNil() {
+        XCTAssertNotNil(UIImage.infoOutlineImage)
     }
 
     func testInvisibleImageIconIsNotNil() {
@@ -305,5 +313,9 @@ final class IconsTests: XCTestCase {
 
     func testNoStoreImageIsNotNil() {
         XCTAssertNotNil(UIImage.noStoreImage)
+    }
+
+    func test_megaphoneIcon_is_not_nil() {
+        XCTAssertNotNil(UIImage.megaphoneIcon)
     }
 }

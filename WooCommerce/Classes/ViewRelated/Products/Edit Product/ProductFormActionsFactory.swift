@@ -7,6 +7,7 @@ enum ProductFormEditAction {
     case description
     case priceSettings
     case reviews
+    case productType
     case inventorySettings
     case shippingSettings
     case categories
@@ -18,9 +19,10 @@ enum ProductFormEditAction {
     // Grouped products only
     case groupedProducts
     // Variable products only
-    case variationName
     case variations
     // Variation only
+    case variationName
+    case noPriceWarning
     case status
 }
 
@@ -86,6 +88,7 @@ private extension ProductFormActionsFactory {
 
     func allSettingsSectionActionsForSimpleProduct() -> [ProductFormEditAction] {
         let shouldShowReviewsRow = isEditProductsRelease3Enabled
+        let shouldShowProductTypeRow = isEditProductsRelease3Enabled
         let shouldShowShippingSettingsRow = product.isShippingEnabled()
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
@@ -98,13 +101,15 @@ private extension ProductFormActionsFactory {
             .inventorySettings,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
-            shouldShowBriefDescriptionRow ? .briefDescription: nil
+            shouldShowBriefDescriptionRow ? .briefDescription: nil,
+            shouldShowProductTypeRow ? .productType : nil
         ]
         return actions.compactMap { $0 }
     }
 
     func allSettingsSectionActionsForAffiliateProduct() -> [ProductFormEditAction] {
         let shouldShowReviewsRow = isEditProductsRelease3Enabled
+        let shouldShowProductTypeRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
@@ -116,13 +121,15 @@ private extension ProductFormActionsFactory {
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
-            shouldShowBriefDescriptionRow ? .briefDescription: nil
+            shouldShowBriefDescriptionRow ? .briefDescription: nil,
+            shouldShowProductTypeRow ? .productType : nil
         ]
         return actions.compactMap { $0 }
     }
 
     func allSettingsSectionActionsForGroupedProduct() -> [ProductFormEditAction] {
         let shouldShowReviewsRow = isEditProductsRelease3Enabled
+        let shouldShowProductTypeRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
@@ -133,13 +140,15 @@ private extension ProductFormActionsFactory {
             .sku,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
-            shouldShowBriefDescriptionRow ? .briefDescription: nil
+            shouldShowBriefDescriptionRow ? .briefDescription: nil,
+            shouldShowProductTypeRow ? .productType : nil
         ]
         return actions.compactMap { $0 }
     }
 
     func allSettingsSectionActionsForVariableProduct() -> [ProductFormEditAction] {
         let shouldShowReviewsRow = isEditProductsRelease3Enabled
+        let shouldShowProductTypeRow = isEditProductsRelease3Enabled
         let shouldShowBriefDescriptionRow = isEditProductsRelease2Enabled
         let shouldShowCategoriesRow = isEditProductsRelease3Enabled
         let shouldShowTagsRow = isEditProductsRelease3Enabled
@@ -149,7 +158,8 @@ private extension ProductFormActionsFactory {
             shouldShowReviewsRow ? .reviews: nil,
             shouldShowCategoriesRow ? .categories: nil,
             shouldShowTagsRow ? .tags: nil,
-            shouldShowBriefDescriptionRow ? .briefDescription: nil
+            shouldShowBriefDescriptionRow ? .briefDescription: nil,
+            shouldShowProductTypeRow ? .productType : nil
         ]
         return actions.compactMap { $0 }
     }
@@ -167,6 +177,9 @@ private extension ProductFormActionsFactory {
             return true
         case .reviews:
             // The reviews action is always visible in the settings section.
+            return true
+        case .productType:
+            // The product type action is always visible in the settings section.
             return true
         case .inventorySettings:
             let hasStockData = product.manageStock ? product.stockQuantity != nil: true

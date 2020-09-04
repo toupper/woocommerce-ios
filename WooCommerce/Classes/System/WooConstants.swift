@@ -39,10 +39,6 @@ extension WooConstants {
     ///
     enum URLs: String, CaseIterable {
 
-        /// Jetpack Setup URL
-        ///
-        case jetpackSetup = "https://jetpack.com/support/getting-started-with-jetpack/"
-
         /// Terms of Service Website. Displayed by the Authenticator (when / if needed).
         ///
         case termsOfService = "https://wordpress.com/tos/"
@@ -71,13 +67,21 @@ extension WooConstants {
         ///
         case blog = "https://woocommerce.com/blog/"
 
+        /// Jetpack Setup URL when there are no stores available
+        ///
+        case emptyStoresJetpackSetup = "https://docs.woocommerce.com/document/jetpack-setup-instructions-for-the-woocommerce-mobile-app/"
+
         /// URL for in-app feedback survey
         ///
 #if DEBUG
-        case inAppFeedback = "https://wasseryi.survey.fm/woo-mobile-app-test-survey"
+        case inAppFeedback = "https://automattic.survey.fm/woo-app-general-feedback-test-survey"
 #else
         case inAppFeedback = "https://automattic.survey.fm/woo-app-general-feedback-user-survey"
 #endif
+
+        /// URL for the productsM3 feedback survey
+        ///
+        case productsM3Feedback = "https://automattic.survey.fm/woo-app-feature-feedback-products"
 
         /// Returns the URL version of the receiver
         ///

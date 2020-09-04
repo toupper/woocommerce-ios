@@ -182,6 +182,12 @@ extension UIImage {
             .imageFlippedForRightToLeftLayoutDirection()
     }
 
+    /// External Product
+    ///
+    static var externalProductImage: UIImage {
+        return UIImage(named: "icon-external-product")!.withRenderingMode(.alwaysTemplate)
+    }
+
     /// Filter Icon
     ///
     static var filterImage: UIImage {
@@ -235,6 +241,12 @@ extension UIImage {
     ///
     static var infoImage: UIImage {
         return UIImage.gridicon(.info, size: CGSize(width: 24, height: 24))
+    }
+
+    /// Info Outline Icon
+    ///
+    static var infoOutlineImage: UIImage {
+        return UIImage.gridicon(.infoOutline)
     }
 
     /// Invisible Image
@@ -444,6 +456,12 @@ extension UIImage {
     ///
     static var noStoreImage: UIImage {
         return UIImage(imageLiteralResourceName: "woo-no-store").imageFlippedForRightToLeftLayoutDirection()
+    }
+
+    /// Megaphone Icon
+    ///
+    static var megaphoneIcon: UIImage {
+        return UIImage(imageLiteralResourceName: "megaphone").imageFlippedForRightToLeftLayoutDirection()
     }
 
     /// Creates a bitmap image of the Woo "bubble" logo based on a vector image in our asset catalog.

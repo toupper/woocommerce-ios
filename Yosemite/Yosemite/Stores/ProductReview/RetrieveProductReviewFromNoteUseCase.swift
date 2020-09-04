@@ -9,9 +9,16 @@ public struct ProductReviewFromNoteParcel {
     public let note: Note
     public let review: ProductReview
     public let product: Product
+
+    public init(note: Note, review: ProductReview, product: Product) {
+        self.note = note
+        self.review = review
+        self.product = product
+    }
 }
 
-/// Fetches the `Note`, `ProductReview`, and `Product` in sequence from the API using a `noteID`.
+/// Fetches the `Note`, `ProductReview`, and `Product` in sequence from the Storage and/or API
+/// using a `noteID`.
 ///
 /// This can be used to present a view when a push notification is received. This should only
 /// be used as part of `ProductReviewStore`.
@@ -103,11 +110,15 @@ final class RetrieveProductReviewFromNoteUseCase {
         }
     }
 
-    /// Fetch the Note from the API.
+    /// Fetch the `Note` from storage, or from the API if it is not available in storage.
     ///
     private func fetchNote(noteID: Int64,
                            abort: @escaping AbortBlock,
                            next: @escaping (Note) -> Void) {
+        if let noteInStorage = derivedStorage?.loadNotification(noteID: noteID) {
+            return next(noteInStorage.toReadOnly())
+        }
+
         notificationsRemote.loadNotes(noteIDs: [noteID], pageSize: nil) { result in
             switch result {
             case .failure(let error):
@@ -122,7 +133,7 @@ final class RetrieveProductReviewFromNoteUseCase {
         }
     }
 
-    /// Fetch the ProductReview based on the given Note from the API.
+    /// Fetch the `ProductReview` from storage, or from the API if it is not available in storage.
     ///
     private func fetchProductReview(from note: Note,
                                     abort: @escaping AbortBlock,
@@ -130,6 +141,10 @@ final class RetrieveProductReviewFromNoteUseCase {
         guard let siteID = note.meta.identifier(forKey: .site),
             let reviewID = note.meta.identifier(forKey: .comment) else {
                 return abort(ProductReviewFromNoteRetrieveError.reviewNotFound)
+        }
+
+        if let productReviewInStorage = derivedStorage?.loadProductReview(siteID: Int64(siteID), reviewID: Int64(reviewID)) {
+            return next(productReviewInStorage.toReadOnly())
         }
 
         productReviewsRemote.loadProductReview(for: Int64(siteID), reviewID: Int64(reviewID)) { result in
@@ -160,12 +175,16 @@ final class RetrieveProductReviewFromNoteUseCase {
         }
     }
 
-    /// Fetch the `Product` from the API.
+    /// Fetch the `Product` from storage, or from the API if it is not available in storage.
     ///
     private func fetchProduct(siteID: Int64,
                               productID: Int64,
                               abort: @escaping AbortBlock,
                               next: @escaping (Product) -> Void) {
+        if let productInStorage = derivedStorage?.loadProduct(siteID: siteID, productID: productID) {
+            return next(productInStorage.toReadOnly())
+        }
+
         productsRemote.loadProduct(for: siteID, productID: productID) { result in
             switch result {
             case .failure(let error):

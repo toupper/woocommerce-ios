@@ -6,20 +6,34 @@ struct ProductsTopBannerFactory {
     /// - Parameters:
     ///   - isExpanded: whether the top banner is expanded by default.
     ///   - expandedStateChangeHandler: called when the top banner expanded state changes.
+    ///   - onGiveFeedbackButtonPressed: called the give feedbak button is pressed.
+    ///   - onDismissButtonPressed: called the dismiss button is pressed
     ///   - onCompletion: called when the view controller is created and ready for display.
     static func topBanner(isExpanded: Bool,
+                          stores: StoresManager = ServiceLocator.stores,
+                          isInAppFeedbackFeatureEnabled: Bool,
                           expandedStateChangeHandler: @escaping () -> Void,
+                          onGiveFeedbackButtonPressed: @escaping () -> Void,
+                          onDismissButtonPressed: @escaping () -> Void,
                           onCompletion: @escaping (TopBannerView) -> Void) {
+        let action = AppSettingsAction.loadProductsFeatureSwitch { isEditProductsRelease3Enabled in
             let title = Strings.title
-            let infoText = Strings.info
+            let icon: UIImage = isInAppFeedbackFeatureEnabled ? .megaphoneIcon : .workInProgressBanner
+            let infoText = isEditProductsRelease3Enabled ? Strings.infoWhenRelease3IsEnabled: Strings.info
+            let giveFeedbackAction = TopBannerViewModel.ActionButton(title: Strings.giveFeedback, action: onGiveFeedbackButtonPressed)
+            let dismissAction = TopBannerViewModel.ActionButton(title: Strings.dismiss, action: onDismissButtonPressed)
+            let actions: [TopBannerViewModel.ActionButton] = isInAppFeedbackFeatureEnabled ? [giveFeedbackAction, dismissAction] : []
             let viewModel = TopBannerViewModel(title: title,
                                                infoText: infoText,
-                                               icon: .workInProgressBanner,
+                                               icon: icon,
                                                isExpanded: isExpanded,
-                                               topButton: .chevron(handler: expandedStateChangeHandler))
+                                               topButton: .chevron(handler: expandedStateChangeHandler),
+                                               actionButtons: actions)
             let topBannerView = TopBannerView(viewModel: viewModel)
             topBannerView.translatesAutoresizingMaskIntoConstraints = false
             onCompletion(topBannerView)
+        }
+        stores.dispatch(action)
     }
 }
 
@@ -31,5 +45,13 @@ private extension ProductsTopBannerFactory {
         static let info =
             NSLocalizedString("We've added more editing functionalities to products! You can now update images, see previews and share your products.",
                               comment: "The info of the Work In Progress top banner on the Products tab.")
+        static let infoWhenRelease3IsEnabled =
+            NSLocalizedString("You can now edit grouped, external and variable products, change product type and update categories and tags",
+                              comment: "The info of the Work In Progress top banner on the Products tab when Products feature switch is enabled.")
+        static let giveFeedback =
+            NSLocalizedString("Give feedback",
+                              comment: "The title of the button to give feedback about products beta features on the banner on the products tab")
+        static let dismiss = NSLocalizedString("Dismiss", comment: "The title of the button to dismiss the banner on the products tab")
+
     }
 }

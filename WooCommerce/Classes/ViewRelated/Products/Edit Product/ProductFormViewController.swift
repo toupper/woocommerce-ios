@@ -18,6 +18,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
     }()
 
     private let viewModel: ViewModel
+    private let eventLogger: ProductFormEventLoggerProtocol
     private var product: ProductModel {
         viewModel.productModel
     }
@@ -50,12 +51,14 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
     private var cancellableUpdateEnabled: ObservationToken?
 
     init(viewModel: ViewModel,
+         eventLogger: ProductFormEventLoggerProtocol,
          productImageActionHandler: ProductImageActionHandler,
          currency: String = CurrencySettings.shared.symbol(from: CurrencySettings.shared.currencyCode),
          presentationStyle: ProductFormPresentationStyle,
          isEditProductsRelease2Enabled: Bool,
          isEditProductsRelease3Enabled: Bool) {
         self.viewModel = viewModel
+        self.eventLogger = eventLogger
         self.currency = currency
         self.presentationStyle = presentationStyle
         self.isEditProductsRelease2Enabled = isEditProductsRelease2Enabled
@@ -76,6 +79,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
         }, onStatusChange: { [weak self] isVisible in
             self?.onEditStatusCompletion(isEnabled: isVisible)
         }, onAddImage: { [weak self] in
+            self?.eventLogger.logImageTapped()
             self?.showProductImages()
         })
     }
@@ -148,7 +152,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
     // MARK: Navigation actions
 
     @objc func updateProduct() {
-        ServiceLocator.analytics.track(.productDetailUpdateButtonTapped)
+        eventLogger.logUpdateButtonTapped()
         let title = NSLocalizedString("Publishing your product...", comment: "Title of the in-progress UI while updating the Product remotely")
         let message = NSLocalizedString("Please wait while we publish this product to your store",
                                         comment: "Message of the in-progress UI while updating the Product remotely")
@@ -209,6 +213,33 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
         present(actionSheet, animated: true)
     }
 
+    // MARK: - Alert
+
+    /// Product Type Change alert
+    ///
+    func presentProductTypeChangeAlert(completion: @escaping (Bool) -> ()) {
+        let title = NSLocalizedString("Are you sure you want to change the product type?",
+                                      comment: "Title of the alert when a user is changing the product type")
+        let body = NSLocalizedString("Changing the product type will modify some of the product data",
+                                     comment: "Body of the alert when a user is changing the product type")
+        let cancelButton = NSLocalizedString("Cancel", comment: "Cancel button on the alert when the user is cancelling the action on changing product type")
+        let confirmButton = NSLocalizedString("Yes, change", comment: "Confirmation button on the alert when the user is changing product type")
+        let alertController = UIAlertController(title: title,
+                                                message: body,
+                                                preferredStyle: .alert)
+        let cancel = UIAlertAction(title: cancelButton,
+                                   style: .cancel) { (action) in
+                                       completion(false)
+                                   }
+        let confirm = UIAlertAction(title: confirmButton,
+                                    style: .default) { (action) in
+                                        completion(true)
+                                    }
+        alertController.addAction(cancel)
+        alertController.addAction(confirm)
+        present(alertController, animated: true)
+    }
+
     // MARK: - UITableViewDelegate
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -220,7 +251,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
             let row = rows[indexPath.row]
             switch row {
             case .description:
-                ServiceLocator.analytics.track(.productDetailViewProductDescriptionTapped)
+                eventLogger.logDescriptionTapped()
                 editProductDescription()
             default:
                 break
@@ -229,46 +260,51 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
             let row = rows[indexPath.row]
             switch row {
             case .price:
-                ServiceLocator.analytics.track(.productDetailViewPriceSettingsTapped)
+                eventLogger.logPriceSettingsTapped()
                 editPriceSettings()
             case .reviews:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewReviewsTapped)
                 showReviews()
+            case .productType:
+                ServiceLocator.analytics.track(.productDetailViewProductTypeTapped)
+                let cell = tableView.cellForRow(at: indexPath)
+                editProductType(cell: cell)
             case .shipping:
-                ServiceLocator.analytics.track(.productDetailViewShippingSettingsTapped)
+                eventLogger.logShippingSettingsTapped()
                 editShippingSettings()
             case .inventory:
-                ServiceLocator.analytics.track(.productDetailViewInventorySettingsTapped)
+                eventLogger.logInventorySettingsTapped()
                 editInventorySettings()
             case .categories:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewCategoriesTapped)
                 editCategories()
             case .tags:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewTagsTapped)
                 editTags()
             case .briefDescription:
                 ServiceLocator.analytics.track(.productDetailViewShortDescriptionTapped)
                 editShortDescription()
             case .externalURL:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewExternalProductLinkTapped)
                 editExternalLink()
                 break
             case .sku:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewSKUTapped)
                 editSKU()
                 break
             case .groupedProducts:
+                ServiceLocator.analytics.track(.productDetailViewGroupedProductsTapped)
                 editGroupedProducts()
                 break
             case .variations:
-                // TODO-2509 Edit Product M3 analytics
+                ServiceLocator.analytics.track(.productDetailViewVariationsTapped)
                 guard let product = product as? EditableProductModel, product.product.variations.isNotEmpty else {
                     return
                 }
                 let variationsViewController = ProductVariationsViewController(product: product.product,
                                                                                isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
                 show(variationsViewController, sender: self)
-            case .status:
+            case .status, .noPriceWarning:
                 break
             }
         }
@@ -409,6 +445,7 @@ private extension ProductFormViewController {
         }, onStatusChange: { [weak self] isEnabled in
             self?.onEditStatusCompletion(isEnabled: isEnabled)
         }, onAddImage: { [weak self] in
+            self?.eventLogger.logImageTapped()
             self?.showProductImages()
         })
         tableView.dataSource = tableViewDataSource
@@ -444,16 +481,22 @@ private extension ProductFormViewController {
                                                                     self?.dismiss(animated: true) { [weak self] in
                                                                         switch action {
                                                                         case .editInventorySettings:
+                                                                            self?.eventLogger.logInventorySettingsTapped()
                                                                             self?.editInventorySettings()
                                                                         case .editShippingSettings:
+                                                                            self?.eventLogger.logShippingSettingsTapped()
                                                                             self?.editShippingSettings()
                                                                         case .editCategories:
+                                                                            ServiceLocator.analytics.track(.productDetailViewCategoriesTapped)
                                                                             self?.editCategories()
                                                                         case .editTags:
+                                                                            ServiceLocator.analytics.track(.productDetailViewTagsTapped)
                                                                             self?.editTags()
                                                                         case .editBriefDescription:
+                                                                            ServiceLocator.analytics.track(.productDetailViewShortDescriptionTapped)
                                                                             self?.editShortDescription()
                                                                         case .editSKU:
+                                                                            ServiceLocator.analytics.track(.productDetailViewSKUTapped)
                                                                             self?.editSKU()
                                                                             break
                                                                         }
@@ -518,13 +561,12 @@ private extension ProductFormViewController {
                 case .failure(let error):
                     let errorDescription = error.localizedDescription
                     DDLogError("⛔️ Error updating Product: \(errorDescription)")
-                    ServiceLocator.analytics.track(.productDetailUpdateError)
                     // Dismisses the in-progress UI then presents the error alert.
                     self?.navigationController?.dismiss(animated: true) {
                         self?.displayError(error: error)
                     }
                 case .success:
-                    ServiceLocator.analytics.track(.productDetailUpdateSuccess)
+                    break
                 }
                 group.leave()
             }
@@ -595,7 +637,10 @@ private extension ProductFormViewController {
             return
         }
 
-        let viewController = ProductSettingsViewController(product: product.product, password: password, completion: { [weak self] (productSettings) in
+        let viewController = ProductSettingsViewController(product: product.product,
+                                                           password: password,
+                                                           isEditProductsRelease3Enabled: isEditProductsRelease3Enabled,
+                                                           completion: { [weak self] (productSettings) in
             guard let self = self else {
                 return
             }
@@ -805,6 +850,37 @@ private extension ProductFormViewController {
     }
 }
 
+// MARK: Action - Edit Product Type Settings
+//
+private extension ProductFormViewController {
+    func editProductType(cell: UITableViewCell?) {
+        let title = NSLocalizedString("Change product type",
+                                      comment: "Message title of bottom sheet for selecting a product type")
+        let viewProperties = BottomSheetListSelectorViewProperties(title: title)
+        let command = ProductTypeBottomSheetListSelectorCommand(selected: viewModel.productModel.productType) { [weak self] (selectedProductType) in
+            self?.dismiss(animated: true, completion: nil)
+
+            if let originalProductType = self?.product.productType {
+                ServiceLocator.analytics.track(.productTypeChanged, withProperties: [
+                    "from": originalProductType.rawValue,
+                    "to": selectedProductType.rawValue
+                ])
+            }
+            self?.presentProductTypeChangeAlert(completion: { (change) in
+                guard change == true else {
+                    return
+                }
+                self?.viewModel.updateProductType(productType: selectedProductType)
+            })
+        }
+        let productTypesListPresenter = BottomSheetListSelectorPresenter(viewProperties: viewProperties,
+                                                                      command: command) { [weak self] _ in
+                                                                            self?.dismiss(animated: true, completion: nil)
+        }
+        productTypesListPresenter.show(from: self, sourceView: cell, arrowDirections: .any)
+    }
+}
+
 // MARK: Action - Edit Product Shipping Settings
 //
 private extension ProductFormViewController {
@@ -910,7 +986,6 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        //TODO: Edit Product M3 analytics
         let hasChangedData = categories.sorted() != product.product.categories.sorted()
         guard hasChangedData else {
             return
@@ -942,7 +1017,6 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        // TODO-2509: Edit Product M3 analytics
         let hasChangedData = tags.sorted() != product.product.tags.sorted()
         guard hasChangedData else {
             return
@@ -969,8 +1043,8 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        // TODO-2509: Edit Product M3 analytics
         let hasChangedData = sku != product.sku
+        ServiceLocator.analytics.track(.productSKUDoneButtonTapped, withProperties: ["has_changed_data": hasChangedData])
         guard hasChangedData else {
             return
         }
@@ -1000,7 +1074,6 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        // TODO-2000: Edit Product M3 analytics
         let hasChangedData = groupedProductIDs != product.product.groupedProducts
         guard hasChangedData else {
             return
@@ -1031,7 +1104,6 @@ private extension ProductFormViewController {
         defer {
             navigationController?.popViewController(animated: true)
         }
-        // TODO-2000: Edit Product M3 analytics
         let hasChangedData = externalURL != product.product.externalURL || buttonText != product.product.buttonText
         guard hasChangedData else {
             return

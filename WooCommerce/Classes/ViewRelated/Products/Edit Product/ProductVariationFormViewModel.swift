@@ -171,6 +171,10 @@ extension ProductVariationFormViewModel {
                                                          parentProductSKU: parentProductSKU)
     }
 
+    func updateProductType(productType: ProductType) {
+        // no-op
+    }
+
     func updateProductCategories(_ categories: [ProductCategory]) {
         // no-op
     }
@@ -200,6 +204,7 @@ extension ProductVariationFormViewModel {
     }
 
     func updateStatus(_ isEnabled: Bool) {
+        ServiceLocator.analytics.track(.productVariationDetailViewStatusSwitchTapped)
         let status: ProductStatus = isEnabled ? .publish: .privateStatus
         productVariation = EditableProductVariationModel(productVariation: productVariation.productVariation.copy(status: status),
                                                          allAttributes: allAttributes,
@@ -217,8 +222,10 @@ extension ProductVariationFormViewModel {
             }
             switch result {
             case .failure(let error):
+                ServiceLocator.analytics.track(.productVariationDetailUpdateError, withError: error)
                 onCompletion(.failure(error))
             case .success(let productVariation):
+                ServiceLocator.analytics.track(.productVariationDetailUpdateSuccess)
                 let model = EditableProductVariationModel(productVariation: productVariation,
                                                           allAttributes: self.allAttributes,
                                                           parentProductSKU: self.parentProductSKU)

@@ -11,18 +11,24 @@ struct ProductsTopBannerFactory {
     ///   - onCompletion: called when the view controller is created and ready for display.
     static func topBanner(isExpanded: Bool,
                           stores: StoresManager = ServiceLocator.stores,
-                          isInAppFeedbackFeatureEnabled: Bool,
+                          analytics: Analytics = ServiceLocator.analytics,
                           expandedStateChangeHandler: @escaping () -> Void,
                           onGiveFeedbackButtonPressed: @escaping () -> Void,
                           onDismissButtonPressed: @escaping () -> Void,
                           onCompletion: @escaping (TopBannerView) -> Void) {
         let action = AppSettingsAction.loadProductsFeatureSwitch { isEditProductsRelease3Enabled in
             let title = Strings.title
-            let icon: UIImage = isInAppFeedbackFeatureEnabled ? .megaphoneIcon : .workInProgressBanner
+            let icon: UIImage = .megaphoneIcon
             let infoText = isEditProductsRelease3Enabled ? Strings.infoWhenRelease3IsEnabled: Strings.info
-            let giveFeedbackAction = TopBannerViewModel.ActionButton(title: Strings.giveFeedback, action: onGiveFeedbackButtonPressed)
-            let dismissAction = TopBannerViewModel.ActionButton(title: Strings.dismiss, action: onDismissButtonPressed)
-            let actions: [TopBannerViewModel.ActionButton] = isInAppFeedbackFeatureEnabled ? [giveFeedbackAction, dismissAction] : []
+            let giveFeedbackAction = TopBannerViewModel.ActionButton(title: Strings.giveFeedback) {
+                analytics.track(event: .featureFeedbackBanner(context: .productsM3, action: .gaveFeedback))
+                onGiveFeedbackButtonPressed()
+            }
+            let dismissAction = TopBannerViewModel.ActionButton(title: Strings.dismiss) {
+                analytics.track(event: .featureFeedbackBanner(context: .productsM3, action: .dismissed))
+                onDismissButtonPressed()
+            }
+            let actions = [giveFeedbackAction, dismissAction]
             let viewModel = TopBannerViewModel(title: title,
                                                infoText: infoText,
                                                icon: icon,

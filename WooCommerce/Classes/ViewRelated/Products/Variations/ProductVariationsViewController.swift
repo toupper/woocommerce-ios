@@ -183,7 +183,12 @@ private extension ProductVariationsViewController {
     }
 
     func updateTopBannerView() {
-        let hasVariationsMissingPrice = resultsController.fetchedObjects.contains { $0.price.isEmpty }
+        let hasVariationsMissingPrice = resultsController.fetchedObjects.contains {
+            EditableProductVariationModel(productVariation: $0,
+                                          allAttributes: allAttributes,
+                                          parentProductSKU: parentProductSKU)
+                .isEnabledAndMissingPrice
+        }
         topBannerView.isHidden = hasVariationsMissingPrice == false
         tableView.updateHeaderHeight()
     }
@@ -300,7 +305,6 @@ extension ProductVariationsViewController: UITableViewDelegate {
                                                            productImageActionHandler: productImageActionHandler,
                                                            currency: currency,
                                                            presentationStyle: .navigationStack,
-                                                           isEditProductsRelease2Enabled: true,
                                                            isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
             navigationController?.pushViewController(viewController, animated: true)
         }

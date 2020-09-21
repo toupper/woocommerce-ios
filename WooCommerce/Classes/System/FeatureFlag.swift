@@ -10,27 +10,13 @@ enum FeatureFlag: Int {
     ///
     case barcodeScanner
 
-    /// Edit products
-    ///
-    case editProducts
-
-    /// Edit products - release 2
-    ///
-    case editProductsRelease2
-
     /// Edit products - release 3
     ///
     case editProductsRelease3
 
-    /// To be used for the In-app Feedback tasks until all tasks are completed.
+    /// Edit products - release 4
     ///
-    /// - SeeAlso: https://github.com/woocommerce/woocommerce-ios/projects/18
-    ///
-    case inAppFeedback
-
-    /// Readonly Product variants
-    ///
-    case readonlyProductVariants
+    case editProductsRelease4
 
     /// Product Reviews
     ///

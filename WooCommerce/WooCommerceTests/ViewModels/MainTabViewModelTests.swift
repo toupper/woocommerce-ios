@@ -1,4 +1,5 @@
 import XCTest
+import TestKit
 
 @testable import WooCommerce
 
@@ -7,24 +8,12 @@ import Yosemite
 /// Test cases for `MainTabViewModel`.
 final class MainTabViewModelTests: XCTestCase {
 
-    private var featureFlagService: MockFeatureFlagService!
-
-    override func setUp() {
-        super.setUp()
-        featureFlagService = MockFeatureFlagService(isInAppFeedbackOn: true)
-    }
-
-    override func tearDown() {
-        featureFlagService = nil
-        super.tearDown()
-    }
-
     func test_onViewDidAppear_will_save_the_installation_date() throws {
         // Given
         let storesManager = MockupStoresManager(sessionManager: .makeForTesting(authenticated: true))
         storesManager.reset()
 
-        let viewModel = MainTabViewModel(storesManager: storesManager, featureFlagService: featureFlagService)
+        let viewModel = MainTabViewModel(storesManager: storesManager)
 
         assertEmpty(storesManager.receivedActions)
 
@@ -49,7 +38,7 @@ final class MainTabViewModelTests: XCTestCase {
         let storesManager = MockupStoresManager(sessionManager: .makeForTesting(authenticated: false))
         storesManager.reset()
 
-        let viewModel = MainTabViewModel(storesManager: storesManager, featureFlagService: featureFlagService)
+        let viewModel = MainTabViewModel(storesManager: storesManager)
 
         assertEmpty(storesManager.receivedActions)
 

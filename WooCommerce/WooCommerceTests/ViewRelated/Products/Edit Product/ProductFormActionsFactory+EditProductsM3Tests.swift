@@ -3,8 +3,8 @@ import XCTest
 @testable import WooCommerce
 @testable import Yosemite
 
-/// The same tests as `ProductFormActionsFactory_EditProductsM2Tests`, but with Edit Products M2 and M3 feature flag on.
-/// When we fully launch Edit Products M2 and M3, we can replace `ProductFormActionsFactoryTests` with the test cases here.
+/// The same tests as `ProductFormActionsFactoryTests`, but with Edit Products M3 feature flag on.
+/// When we fully launch Edit Products M3, we can replace `ProductFormActionsFactoryTests` with the test cases here.
 ///
 final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
     func testViewModelForPhysicalSimpleProductWithoutImages() {
@@ -14,7 +14,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -42,7 +41,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -63,6 +61,32 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
         XCTAssertEqual(factory.bottomSheetActions(), expectedBottomSheetActions)
     }
 
+    func test_viewModel_for_physical_simple_product_with_reviews_disabled() {
+        // Arrange
+        let product = Fixtures.physicalSimpleProductWithReviewsDisabled
+        let model = EditableProductModel(product: product)
+
+        // Action
+        let factory = ProductFormActionsFactory(product: model,
+                                                isEditProductsRelease3Enabled: true)
+
+        // Assert
+        let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
+        XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
+
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.priceSettings,
+                                                                       .shippingSettings,
+                                                                       .inventorySettings,
+                                                                       .categories,
+                                                                       .tags,
+                                                                       .briefDescription,
+                                                                       .productType]
+        XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
+
+        let expectedBottomSheetActions: [ProductFormBottomSheetAction] = []
+        XCTAssertEqual(factory.bottomSheetActions(), expectedBottomSheetActions)
+    }
+
     func testViewModelForDownloadableSimpleProduct() {
         // Arrange
         let product = Fixtures.downloadableSimpleProduct
@@ -70,7 +94,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -97,7 +120,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -124,7 +146,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -148,7 +169,6 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
@@ -169,14 +189,13 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews, .productType]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews, .shippingSettings, .inventorySettings, .productType]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]
@@ -190,14 +209,53 @@ final class ProductFormActionsFactory_EditProductsM3Tests: XCTestCase {
 
         // Action
         let factory = ProductFormActionsFactory(product: model,
-                                                isEditProductsRelease2Enabled: true,
                                                 isEditProductsRelease3Enabled: true)
 
         // Assert
         let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
         XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
 
-        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews, .productType]
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.variations, .reviews, .shippingSettings, .inventorySettings, .productType]
+        XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
+
+        let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]
+        XCTAssertEqual(factory.bottomSheetActions(), expectedBottomSheetActions)
+    }
+
+    func test_actions_for_non_core_product_without_price() {
+        // Arrange
+        let product = Fixtures.nonCoreProductWithoutPrice
+        let model = EditableProductModel(product: product)
+
+        // Action
+        let factory = ProductFormActionsFactory(product: model,
+                                                isEditProductsRelease3Enabled: true)
+
+        // Assert
+        let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
+        XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
+
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.reviews, .readonlyInventorySettings, .readonlyProductType]
+        XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
+
+        let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]
+        XCTAssertEqual(factory.bottomSheetActions(), expectedBottomSheetActions)
+    }
+
+    func test_actions_for_non_core_product_with_price() {
+        // Arrange
+        let product = Fixtures.nonCoreProductWithPrice
+        let model = EditableProductModel(product: product)
+
+        // Action
+        let factory = ProductFormActionsFactory(product: model,
+                                                isEditProductsRelease3Enabled: true)
+
+        // Assert
+        let expectedPrimarySectionActions: [ProductFormEditAction] = [.images, .name, .description]
+        XCTAssertEqual(factory.primarySectionActions(), expectedPrimarySectionActions)
+
+        let expectedSettingsSectionActions: [ProductFormEditAction] = [.readonlyPriceSettings, .reviews, .readonlyInventorySettings, .readonlyProductType]
         XCTAssertEqual(factory.settingsSectionActions(), expectedSettingsSectionActions)
 
         let expectedBottomSheetActions: [ProductFormBottomSheetAction] = [.editCategories, .editTags, .editBriefDescription]
@@ -228,6 +286,15 @@ private extension ProductFormActionsFactory_EditProductsM3Tests {
                                                                               manageStock: true, sku: "uks", stockQuantity: nil,
                                                                               dimensions: ProductDimensions(length: "", width: "", height: ""), weight: "2",
                                                                               virtual: false,
+                                                                              categories: [category],
+                                                                              tags: [tag],
+                                                                              images: [image])
+        // downloadable: false, virtual: true, reviews: false, with inventory/shipping/categories/tags/brief description
+        static let physicalSimpleProductWithReviewsDisabled = MockProduct().product(downloadable: false, briefDescription: "desc", productType: .simple,
+                                                                              manageStock: true, sku: "uks", stockQuantity: nil,
+                                                                              dimensions: ProductDimensions(length: "", width: "", height: ""), weight: "2",
+                                                                              virtual: false,
+                                                                              reviewsAllowed: false,
                                                                               categories: [category],
                                                                               tags: [tag],
                                                                               images: [image])
@@ -264,5 +331,12 @@ private extension ProductFormActionsFactory_EditProductsM3Tests {
         static let variableProductWithVariations = MockProduct().product(briefDescription: "",
                                                            productType: .variable,
                                                            sku: "").copy(variations: [123])
+        // Non-core product, missing price/brief description/categories/tags
+        static let nonCoreProductWithoutPrice = MockProduct().product(briefDescription: "",
+                                                                      productType: .custom("other")).copy(regularPrice: "")
+
+        // Non-core product, missing brief description/categories/tags
+        static let nonCoreProductWithPrice = MockProduct().product(briefDescription: "",
+                                                                   productType: .custom("other")).copy(regularPrice: "2")
     }
 }

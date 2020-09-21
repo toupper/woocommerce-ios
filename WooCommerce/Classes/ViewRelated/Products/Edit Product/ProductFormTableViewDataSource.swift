@@ -125,22 +125,36 @@ private extension ProductFormTableViewDataSource {
         cell.onAddImage = { [weak self] in
             self?.onAddImage?()
         }
+        cell.accessibilityLabel = NSLocalizedString(
+            "List of images of the product",
+            comment: "VoiceOver accessibility hint, informing the user about the image section header of a product in product detail screen."
+        )
     }
 
     func configureName(cell: UITableViewCell, name: String?) {
-        guard let cell = cell as? TextFieldTableViewCell else {
+        guard let cell = cell as? TextViewTableViewCell else {
             fatalError()
         }
 
         cell.accessoryType = .none
 
         let placeholder = NSLocalizedString("Title", comment: "Placeholder in the Product Title row on Product form screen.")
-        let viewModel = TextFieldTableViewCell.ViewModel(text: name, placeholder: placeholder, onTextChange: { [weak self] newName in
+
+        let cellViewModel = TextViewTableViewCell.ViewModel(text: name,
+                                                            placeholder: placeholder,
+                                                            textViewMinimumHeight: 10.0,
+                                                            isScrollEnabled: false,
+                                                            onTextChange: { [weak self] (newName) in
             self?.onNameChange?(newName)
-            }, onTextDidBeginEditing: {
-                ServiceLocator.analytics.track(.productDetailViewProductNameTapped)
-        }, inputFormatter: nil, keyboardType: .default)
-        cell.configure(viewModel: viewModel)
+            },
+                                                            style: .headline,
+                                                            edgeInsets: UIEdgeInsets(top: 8, left: 11, bottom: 8, right: 11))
+
+        cell.configure(with: cellViewModel)
+        cell.accessibilityLabel = NSLocalizedString(
+            "Title of the product",
+            comment: "VoiceOver accessibility hint, informing the user about the title of a product in product detail screen."
+        )
     }
 
     func configureVariationName(cell: UITableViewCell, name: String) {
@@ -182,9 +196,9 @@ private extension ProductFormTableViewDataSource {
 private extension ProductFormTableViewDataSource {
     func configureCellInSettingsFieldsSection(_ cell: UITableViewCell, row: ProductFormSection.SettingsRow) {
         switch row {
-        case .price(let viewModel),
-             .inventory(let viewModel),
-             .productType(let viewModel),
+        case .price(let viewModel, _),
+             .inventory(let viewModel, _),
+             .productType(let viewModel, _),
              .shipping(let viewModel),
              .categories(let viewModel),
              .tags(let viewModel),
@@ -223,9 +237,7 @@ private extension ProductFormTableViewDataSource {
                        details: viewModel.details ?? "",
                        ratingCount: ratingCount,
                        averageRating: averageRating)
-        if ratingCount > 0 {
-            cell.accessoryType = .disclosureIndicator
-        }
+        cell.accessoryType = .disclosureIndicator
     }
 
     func configureSettingsRowWithASwitch(cell: UITableViewCell, viewModel: ProductFormSection.SettingsRow.SwitchableViewModel) {

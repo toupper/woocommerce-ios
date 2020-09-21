@@ -39,7 +39,7 @@ final class ProductsViewController: UIViewController {
         let subviews = [topBannerContainerView, toolbar]
         let stackView = UIStackView(arrangedSubviews: subviews)
         stackView.axis = .vertical
-        stackView.spacing = 8
+        stackView.spacing = Constants.headerViewSpacing
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }()
@@ -171,7 +171,7 @@ final class ProductsViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
-        tableView.updateHeaderHeight()
+        updateTableHeaderViewHeight()
     }
 }
 
@@ -227,6 +227,10 @@ private extension ProductsViewController {
     @objc func scanProducts() {
         // TODO-2407: scan barcodes for products
     }
+
+    @objc func addProduct() {
+        // TODO-2740: add product flow
+    }
 }
 
 // MARK: - View Configuration
@@ -257,8 +261,22 @@ private extension ProductsViewController {
             return button
         }()
 
+        var rightBarButtonItems = [UIBarButtonItem]()
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.editProductsRelease4) {
+            let buttonItem: UIBarButtonItem = {
+                let button = UIBarButtonItem(image: .plusImage,
+                                             style: .plain,
+                                             target: self,
+                                             action: #selector(addProduct))
+                button.accessibilityTraits = .button
+                button.accessibilityLabel = NSLocalizedString("Add a product", comment: "The action to add a product")
+                return button
+            }()
+            rightBarButtonItems.append(buttonItem)
+        }
+
         if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.barcodeScanner) {
-            navigationItem.rightBarButtonItem = {
+            let buttonItem: UIBarButtonItem = {
                 let button = UIBarButtonItem(image: .scanImage,
                                              style: .plain,
                                              target: self,
@@ -272,7 +290,10 @@ private extension ProductsViewController {
 
                 return button
             }()
+            rightBarButtonItems.append(buttonItem)
         }
+
+        navigationItem.rightBarButtonItems = rightBarButtonItems
     }
 
     /// Apply Woo styles.
@@ -384,11 +405,9 @@ private extension ProductsViewController {
     ///
     func requestAndShowNewTopBannerView() {
         let isExpanded = topBannerView?.isExpanded ?? false
-        let isInAppFeedbackEnabled = ServiceLocator.featureFlagService.isFeatureFlagEnabled(.inAppFeedback)
         ProductsTopBannerFactory.topBanner(isExpanded: isExpanded,
-                                           isInAppFeedbackFeatureEnabled: isInAppFeedbackEnabled,
                                            expandedStateChangeHandler: { [weak self] in
-            self?.tableView.updateHeaderHeight()
+            self?.updateTableHeaderViewHeight()
         }, onGiveFeedbackButtonPressed: { [weak self] in
             self?.presentProductsFeedback()
         }, onDismissButtonPressed: { [weak self] in
@@ -396,14 +415,20 @@ private extension ProductsViewController {
         }, onCompletion: { [weak self] topBannerView in
             self?.topBannerContainerView.updateSubview(topBannerView)
             self?.topBannerView = topBannerView
-            self?.tableView.updateHeaderHeight()
+            self?.updateTableHeaderViewHeight()
         })
     }
 
     func hideTopBannerView() {
         topBannerView?.removeFromSuperview()
         topBannerView = nil
-        tableView.tableHeaderView = nil
+        updateTableHeaderViewHeight()
+    }
+
+    /// Updates table header view with the correct spacing / edges depending if `topBannerContainerView` is empty or not.
+    ///
+    func updateTableHeaderViewHeight() {
+        topStackView.spacing = topBannerContainerView.subviews.isNotEmpty ? Constants.headerViewSpacing : 0
         tableView.updateHeaderHeight()
     }
 
@@ -491,8 +516,7 @@ extension ProductsViewController: UITableViewDelegate {
 
         let product = resultsController.object(at: indexPath)
 
-        let isEditProductsFeatureFlagOn = ServiceLocator.featureFlagService.isFeatureFlagEnabled(.editProducts)
-        didSelectProduct(product: product, isEditProductsEnabled: isEditProductsFeatureFlagOn)
+        didSelectProduct(product: product)
     }
 
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
@@ -509,7 +533,7 @@ extension ProductsViewController: UITableViewDelegate {
 }
 
 private extension ProductsViewController {
-    func didSelectProduct(product: Product, isEditProductsEnabled: Bool) {
+    func didSelectProduct(product: Product) {
         ProductDetailsFactory.productDetails(product: product, presentationStyle: .navigationStack) { [weak self] viewController in
             self?.navigationController?.pushViewController(viewController, animated: true)
         }
@@ -677,21 +701,22 @@ extension ProductsViewController: SyncingCoordinatorDelegate {
                                  stockStatus: filters.stockStatus,
                                  productStatus: filters.productStatus,
                                  productType: filters.productType,
-                                 sortOrder: sortOrder) { [weak self] error in
+                                 sortOrder: sortOrder) { [weak self] result in
                                     guard let self = self else {
                                         return
                                     }
 
-                                    if let error = error {
+                                    switch result {
+                                    case .failure(let error):
                                         ServiceLocator.analytics.track(.productListLoadError, withError: error)
                                         DDLogError("⛔️ Error synchronizing products: \(error)")
                                         self.displaySyncingErrorNotice(pageNumber: pageNumber, pageSize: pageSize)
-                                    } else {
+                                    case .success:
                                         ServiceLocator.analytics.track(.productListLoaded)
                                     }
 
                                     self.transitionToResultsUpdatedState()
-                                    onCompletion?(error == nil)
+                                    onCompletion?(result.isSuccess)
         }
 
         ServiceLocator.stores.dispatch(action)
@@ -794,6 +819,7 @@ extension ProductsViewController {
 private extension ProductsViewController {
 
     enum Constants {
+        static let headerViewSpacing = CGFloat(8)
         static let estimatedRowHeight = CGFloat(86)
         static let placeholderRowsPerSection = [3]
         static let headerDefaultHeight = CGFloat(130)

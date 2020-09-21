@@ -29,7 +29,6 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
         let productImageActionHandler = ProductImageActionHandler(siteID: defaultSiteID, product: model)
         let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
-                                             isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
         let taxClass = TaxClass(siteID: product.siteID, name: "standard", slug: product.taxClass ?? "standard")
         cancellableProduct = viewModel.observableProduct.subscribe { _ in
@@ -62,7 +61,10 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
                                           stockQuantity: product.stockQuantity,
                                           backordersSetting: product.backordersSetting,
                                           stockStatus: product.productStockStatus)
-        viewModel.updateShippingSettings(weight: product.weight, dimensions: product.dimensions, shippingClass: product.productShippingClass)
+        viewModel.updateShippingSettings(weight: product.weight,
+                                         dimensions: product.dimensions,
+                                         shippingClass: product.shippingClass,
+                                         shippingClassID: product.shippingClassID)
         viewModel.updateProductCategories(product.categories)
         viewModel.updateProductTags(product.tags)
     }
@@ -75,7 +77,6 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
         let productImageActionHandler = ProductImageActionHandler(siteID: defaultSiteID, product: model)
         let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
-                                             isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
         var isProductUpdated: Bool?
         cancellableProduct = viewModel.observableProduct.subscribe { product in
@@ -117,7 +118,6 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
         let productImageActionHandler = ProductImageActionHandler(siteID: defaultSiteID, product: model)
         let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
-                                             isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
         var isProductUpdated: Bool?
         cancellableProduct = viewModel.observableProduct.subscribe { product in
@@ -155,7 +155,6 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
         let productImageActionHandler = ProductImageActionHandler(siteID: defaultSiteID, product: model)
         let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
-                                             isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
         // The password is set from a separate DotCom API.
         viewModel.resetPassword("134")
@@ -200,7 +199,6 @@ final class ProductFormViewModel_ObservablesTests: XCTestCase {
         let productImageActionHandler = ProductImageActionHandler(siteID: defaultSiteID, product: model)
         let viewModel = ProductFormViewModel(product: model,
                                              productImageActionHandler: productImageActionHandler,
-                                             isEditProductsRelease2Enabled: true,
                                              isEditProductsRelease3Enabled: false)
         var isProductUpdated: Bool?
         cancellableProduct = viewModel.observableProduct.subscribe { product in

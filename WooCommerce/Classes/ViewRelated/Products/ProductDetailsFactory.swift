@@ -8,29 +8,21 @@ struct ProductDetailsFactory {
     ///   - presentationStyle: how the product details are presented.
     ///   - currencySettings: site currency settings.
     ///   - stores: where the Products feature switch value can be read.
+    ///   - forceReadOnly: force the product detail to be presented in read only mode
     ///   - onCompletion: called when the view controller is created and ready for display.
     static func productDetails(product: Product,
                                presentationStyle: ProductFormPresentationStyle,
                                currencySettings: CurrencySettings = ServiceLocator.currencySettings,
                                stores: StoresManager = ServiceLocator.stores,
+                               forceReadOnly: Bool,
                                onCompletion: @escaping (UIViewController) -> Void) {
-        let action = AppSettingsAction.loadProductsFeatureSwitch { isFeatureSwitchOn in
-            let isEditProductsEnabled: Bool
-            switch product.productType {
-            case .simple:
-                isEditProductsEnabled = true
-            default:
-                isEditProductsEnabled = isFeatureSwitchOn
-            }
-
-            let vc = productDetails(product: product,
-                                    presentationStyle: presentationStyle,
-                                    currencySettings: currencySettings,
-                                    isEditProductsEnabled: isEditProductsEnabled,
-                                    isEditProductsRelease3Enabled: isFeatureSwitchOn)
-            onCompletion(vc)
-        }
-        stores.dispatch(action)
+        let vc = productDetails(product: product,
+                                presentationStyle: presentationStyle,
+                                currencySettings: currencySettings,
+                                isEditProductsEnabled: forceReadOnly ? false: true,
+                                isEditProductsRelease3Enabled: true,
+                                isEditProductsRelease5Enabled: ServiceLocator.featureFlagService.isFeatureFlagEnabled(.editProductsRelease5))
+        onCompletion(vc)
     }
 }
 
@@ -39,7 +31,8 @@ private extension ProductDetailsFactory {
                                presentationStyle: ProductFormPresentationStyle,
                                currencySettings: CurrencySettings,
                                isEditProductsEnabled: Bool,
-                               isEditProductsRelease3Enabled: Bool) -> UIViewController {
+                               isEditProductsRelease3Enabled: Bool,
+                               isEditProductsRelease5Enabled: Bool) -> UIViewController {
         let vc: UIViewController
         let productModel = EditableProductModel(product: product)
         let productImageActionHandler = ProductImageActionHandler(siteID: product.siteID,
@@ -48,7 +41,8 @@ private extension ProductDetailsFactory {
             let viewModel = ProductFormViewModel(product: productModel,
                                                  formType: .edit,
                                                  productImageActionHandler: productImageActionHandler,
-                                                 isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                                 isEditProductsRelease3Enabled: isEditProductsRelease3Enabled,
+                                                 isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
             vc = ProductFormViewController(viewModel: viewModel,
                                            eventLogger: ProductFormEventLogger(),
                                            productImageActionHandler: productImageActionHandler,

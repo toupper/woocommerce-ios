@@ -76,14 +76,8 @@ private extension BillingInformationViewController {
     /// Registers all of the available TableViewCells
     ///
     func registerTableViewCells() {
-        let cells = [
-            BillingAddressTableViewCell.self,
-            WooBasicTableViewCell.self
-        ]
-
-        for cell in cells {
-            tableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        tableView.registerNib(for: BillingAddressTableViewCell.self)
+        tableView.registerNib(for: WooBasicTableViewCell.self)
     }
 
     /// Registers all of the available TableViewHeaderFooters
@@ -151,8 +145,8 @@ private extension BillingInformationViewController {
 
         UIApplication.shared.open(phoneURL, options: [:], completionHandler: nil)
         ServiceLocator.analytics.track(.orderContactAction, withProperties: ["id": order.orderID,
-                                                                        "status": order.statusKey,
-                                                                        "type": "call"])
+                                                                             "status": order.status.rawValue,
+                                                                             "type": "call"])
 
     }
 
@@ -166,7 +160,7 @@ private extension BillingInformationViewController {
         messageComposerPresenter.presentIfPossible(from: from, recipient: phoneNumber)
 
         ServiceLocator.analytics.track(.orderContactAction, withProperties: ["id": order.orderID,
-                                                                             "status": order.statusKey,
+                                                                             "status": order.status.rawValue,
                                                                              "type": "sms"])
     }
 

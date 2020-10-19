@@ -161,9 +161,7 @@ final class OrderListViewController: UIViewController {
     /// Returns a function that creates cells for `dataSource`.
     private func makeCellProvider() -> UITableViewDiffableDataSource<String, FetchResultSnapshotObjectID>.CellProvider {
         return { [weak self] tableView, indexPath, objectID in
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: OrderTableViewCell.reuseIdentifier, for: indexPath) as? OrderTableViewCell else {
-                fatalError("Failed to create cell \(OrderTableViewCell.reuseIdentifier)")
-            }
+            let cell = tableView.dequeueReusableCell(OrderTableViewCell.self, for: indexPath)
             guard let self = self else {
                 return cell
             }
@@ -199,8 +197,8 @@ private extension OrderListViewController {
         viewModel.activate()
 
         /// Update the `dataSource` whenever there is a new snapshot.
-        viewModel.snapshot.sink { snapshot in
-            self.dataSource.apply(snapshot)
+        viewModel.snapshot.sink { [weak self] snapshot in
+            self?.dataSource.apply(snapshot)
         }.store(in: &cancellables)
     }
 
@@ -275,12 +273,8 @@ private extension OrderListViewController {
     /// Registers all of the available table view cells and headers
     ///
     func registerTableViewHeadersAndCells() {
-        let cells = [ OrderTableViewCell.self ]
-
-        for cell in cells {
-            tableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-            ghostableTableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        tableView.registerNib(for: OrderTableViewCell.self)
+        ghostableTableView.registerNib(for: OrderTableViewCell.self)
 
         let headerType = TwoColumnSectionHeaderView.self
         tableView.register(headerType.loadNib(), forHeaderFooterViewReuseIdentifier: headerType.reuseIdentifier)
@@ -303,7 +297,6 @@ extension OrderListViewController {
     /// Runs whenever the default Account is updated.
     ///
     @objc func defaultAccountWasUpdated() {
-        refreshStatusPredicate()
         syncingCoordinator.resetInternalState()
     }
 }
@@ -492,7 +485,7 @@ private extension OrderListViewController {
             return nil
         }
 
-        for orderStatus in currentSiteStatuses where orderStatus.slug == order.statusKey {
+        for orderStatus in currentSiteStatuses where orderStatus.status == order.status {
             return orderStatus
         }
 
@@ -526,7 +519,7 @@ extension OrderListViewController: UITableViewDelegate {
 
         let order = orderDetailsViewModel.order
         ServiceLocator.analytics.track(.orderOpen, withProperties: ["id": order.orderID,
-                                                                    "status": order.statusKey])
+                                                                    "status": order.status.rawValue])
 
         navigationController?.pushViewController(orderDetailsVC, animated: true)
     }

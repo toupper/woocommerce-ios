@@ -141,11 +141,7 @@ private extension ShipmentProvidersViewController {
     /// Registers all of the available TableViewCells
     ///
     func registerTableViewCells() {
-        let cells = [WooBasicTableViewCell.self]
-
-        for cell in cells {
-            table.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        table.registerNib(for: WooBasicTableViewCell.self)
     }
 
     func styleTableView() {
@@ -197,10 +193,7 @@ extension ShipmentProvidersViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: WooBasicTableViewCell.reuseIdentifier,
-                                                       for: indexPath) as? WooBasicTableViewCell else {
-                                                        fatalError()
-        }
+        let cell = tableView.dequeueReusableCell(WooBasicTableViewCell.self, for: indexPath)
 
         cell.bodyLabel?.text = viewModel.titleForCellAt(indexPath)
         cell.applyListSelectorStyle()

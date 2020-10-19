@@ -38,9 +38,15 @@ protocol ProductFormViewModelProtocol {
 
     // More menu
 
+    func canSaveAsDraft() -> Bool
+
     func canEditProductSettings() -> Bool
 
     func canViewProductInStore() -> Bool
+
+    func canShareProduct() -> Bool
+
+    func canDeleteProduct() -> Bool
 
     // Update actions
 
@@ -86,7 +92,13 @@ protocol ProductFormViewModelProtocol {
 
     // Remote action
 
-    func updateProductRemotely(onCompletion: @escaping (Result<ProductModel, ProductUpdateError>) -> Void)
+    /// Creates/updates a product remotely given an optional product status to override.
+    /// - Parameters:
+    ///   - status: If non-nil, the given status overrides the latest product's status to be saved remotely.
+    ///   - onCompletion: Called when the product is saved remotely.
+    func saveProductRemotely(status: ProductStatus?, onCompletion: @escaping (Result<ProductModel, ProductUpdateError>) -> Void)
+
+    func deleteProductRemotely(onCompletion: @escaping (Result<EditableProductModel, ProductUpdateError>) -> Void)
 
     // Reset action
 

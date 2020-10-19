@@ -53,8 +53,8 @@ class NewNoteViewController: UIViewController {
 
         ServiceLocator.analytics.track(.orderNoteAddButtonTapped)
         ServiceLocator.analytics.track(.orderNoteAdd, withProperties: ["parent_id": viewModel.order.orderID,
-                                                                  "status": viewModel.order.statusKey,
-                                                                  "type": isCustomerNote ? "customer" : "private"])
+                                                                       "status": viewModel.order.status.rawValue,
+                                                                       "type": isCustomerNote ? "customer" : "private"])
 
         let action = OrderNoteAction.addOrderNote(siteID: viewModel.order.siteID,
                                                   orderID: viewModel.order.orderID,
@@ -96,14 +96,8 @@ private extension NewNoteViewController {
     /// Registers all of the available TableViewCells
     ///
     private func registerTableViewCells() {
-        let cells = [
-            TextViewTableViewCell.self,
-            SwitchTableViewCell.self
-        ]
-
-        for cell in cells {
-            tableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        tableView.registerNib(for: TextViewTableViewCell.self)
+        tableView.registerNib(for: SwitchTableViewCell.self)
     }
 
     /// Setup: Sections

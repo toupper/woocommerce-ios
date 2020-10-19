@@ -1,6 +1,8 @@
 import Foundation
+import KeychainAccess
 import WordPressAuthenticator
 import Yosemite
+import class Networking.UserAgent
 import struct Networking.Settings
 
 
@@ -11,6 +13,10 @@ class AuthenticationManager: Authentication {
     /// Store Picker Coordinator
     ///
     private var storePickerCoordinator: StorePickerCoordinator?
+
+    /// Keychain access for SIWA auth token
+    ///
+    private lazy var keychain = Keychain(service: WooConstants.keychainServiceName)
 
     /// Initializes the WordPress Authenticator.
     ///
@@ -94,10 +100,10 @@ class AuthenticationManager: Authentication {
 
     /// Displays the Login Flow using the specified UIViewController as presenter.
     ///
-    func displayAuthentication(from presenter: UIViewController) {
-        WordPressAuthenticator.showLogin(from: presenter, animated: false, onLoginButtonTapped: {
+    func displayAuthentication(from presenter: UIViewController, animated: Bool, onCompletion: @escaping () -> Void) {
+        WordPressAuthenticator.showLogin(from: presenter, animated: animated, onLoginButtonTapped: {
             ServiceLocator.analytics.track(.loginPrologueContinueTapped)
-        })
+        }, onCompletion: onCompletion)
     }
 
     /// Handles an Authentication URL Callback. Returns *true* on success.
@@ -124,7 +130,7 @@ class AuthenticationManager: Authentication {
 //
 extension AuthenticationManager: WordPressAuthenticatorDelegate {
     func userAuthenticatedWithAppleUserID(_ appleUserID: String) {
-        // Sign in with Apple is not supported yet.
+        keychain.wooAppleID = appleUserID
     }
 
     var allowWPComLogin: Bool {

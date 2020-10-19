@@ -159,11 +159,8 @@ private extension TopPerformerDataViewController {
     }
 
     func registerTableViewCells() {
-        let cells = [ProductTableViewCell.self, NoPeriodDataTableViewCell.self]
-
-        for cell in cells {
-            tableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        tableView.registerNib(for: ProductTableViewCell.self)
+        tableView.registerNib(for: NoPeriodDataTableViewCell.self)
     }
 
     func registerTableViewHeaderFooters() {
@@ -212,11 +209,7 @@ extension TopPerformerDataViewController: UITableViewDataSource {
         guard let statsItem = statsItem(at: indexPath) else {
             return tableView.dequeueReusableCell(withIdentifier: NoPeriodDataTableViewCell.reuseIdentifier, for: indexPath)
         }
-
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: ProductTableViewCell.reuseIdentifier,
-                                                       for: indexPath) as? ProductTableViewCell else {
-            fatalError()
-        }
+        let cell = tableView.dequeueReusableCell(ProductTableViewCell.self, for: indexPath)
 
         cell.configure(statsItem, imageService: imageService)
         cell.hidesBottomBorder = tableView.lastIndexPathOfTheLastSection() == indexPath ? true : false
@@ -254,7 +247,8 @@ private extension TopPerformerDataViewController {
     ///
     func presentProductDetails(for productID: Int64, siteID: Int64) {
         let loaderViewController = ProductLoaderViewController(productID: productID,
-                                                               siteID: siteID)
+                                                               siteID: siteID,
+                                                               forceReadOnly: false)
         let navController = WooNavigationController(rootViewController: loaderViewController)
         present(navController, animated: true, completion: nil)
     }
@@ -316,9 +310,7 @@ private extension TopPerformerDataViewController {
             tableView.separatorStyle = .none
             tableView.estimatedRowHeight = Constants.estimatedRowHeight
             tableView.applyFooterViewForHidingExtraRowPlaceholders()
-
-            tableView.register(ProductTableViewCell.loadNib(),
-                               forCellReuseIdentifier: ProductTableViewCell.reuseIdentifier)
+            tableView.registerNib(for: ProductTableViewCell.self)
         }
 
         /// Activate the ghost if this view is added to the parent.

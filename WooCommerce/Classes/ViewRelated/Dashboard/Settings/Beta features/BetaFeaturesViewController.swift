@@ -82,9 +82,8 @@ private extension BetaFeaturesViewController {
     /// Configure sections for table view.
     ///
     func configureSections() {
-        self.sections = [
-            productsSection()
-        ]
+        // This is empty because there aren't any ongoing experiments
+        self.sections = []
     }
 
     func productsSection() -> Section {
@@ -96,7 +95,7 @@ private extension BetaFeaturesViewController {
     ///
     func registerTableViewCells() {
         for row in Row.allCases {
-            tableView.register(row.type.loadNib(), forCellReuseIdentifier: row.reuseIdentifier)
+            tableView.registerNib(for: row.type)
         }
     }
 

@@ -225,12 +225,8 @@ private extension OrdersViewController {
     /// Registers all of the available table view cells and headers
     ///
     func registerTableViewHeadersAndCells() {
-        let cells = [ OrderTableViewCell.self ]
-
-        for cell in cells {
-            tableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-            ghostableTableView.register(cell.loadNib(), forCellReuseIdentifier: cell.reuseIdentifier)
-        }
+        tableView.registerNib(for: OrderTableViewCell.self)
+        ghostableTableView.registerNib(for: OrderTableViewCell.self)
 
         let headerType = TwoColumnSectionHeaderView.self
         tableView.register(headerType.loadNib(), forHeaderFooterViewReuseIdentifier: headerType.reuseIdentifier)
@@ -252,7 +248,6 @@ extension OrdersViewController {
     /// Runs whenever the default Account is updated.
     ///
     @objc func defaultAccountWasUpdated() {
-        refreshStatusPredicate()
         syncingCoordinator.resetInternalState()
     }
 }
@@ -437,7 +432,7 @@ private extension OrdersViewController {
             return nil
         }
 
-        for orderStatus in currentSiteStatuses where orderStatus.slug == order.statusKey {
+        for orderStatus in currentSiteStatuses where orderStatus.status == order.status {
             return orderStatus
         }
 
@@ -459,9 +454,7 @@ extension OrdersViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: OrderTableViewCell.reuseIdentifier, for: indexPath) as? OrderTableViewCell else {
-            fatalError()
-        }
+        let cell = tableView.dequeueReusableCell(OrderTableViewCell.self, for: indexPath)
 
         let detailsViewModel = viewModel.detailsViewModel(at: indexPath)
         let orderStatus = lookUpOrderStatus(for: detailsViewModel?.order)
@@ -511,7 +504,7 @@ extension OrdersViewController: UITableViewDelegate {
 
         let order = orderDetailsViewModel.order
         ServiceLocator.analytics.track(.orderOpen, withProperties: ["id": order.orderID,
-                                                                    "status": order.statusKey])
+                                                                    "status": order.status.rawValue])
 
         navigationController?.pushViewController(orderDetailsVC, animated: true)
     }

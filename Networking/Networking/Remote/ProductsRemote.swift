@@ -6,8 +6,40 @@ import Foundation
 ///
 public protocol ProductsRemoteProtocol {
     func addProduct(product: Product, completion: @escaping (Result<Product, Error>) -> Void)
+    func deleteProduct(for siteID: Int64, productID: Int64, completion: @escaping (Result<Product, Error>) -> Void)
     func loadProduct(for siteID: Int64, productID: Int64, completion: @escaping (Result<Product, Error>) -> Void)
     func loadProducts(for siteID: Int64, by productIDs: [Int64], pageNumber: Int, pageSize: Int, completion: @escaping (Result<[Product], Error>) -> Void)
+    func loadAllProducts(for siteID: Int64,
+                         context: String?,
+                         pageNumber: Int,
+                         pageSize: Int,
+                         stockStatus: ProductStockStatus?,
+                         productStatus: ProductStatus?,
+                         productType: ProductType?,
+                         orderBy: ProductsRemote.OrderKey,
+                         order: ProductsRemote.Order,
+                         excludedProductIDs: [Int64],
+                         completion: @escaping (Result<[Product], Error>) -> Void)
+    func searchProducts(for siteID: Int64,
+                        keyword: String,
+                        pageNumber: Int,
+                        pageSize: Int,
+                        excludedProductIDs: [Int64],
+                        completion: @escaping ([Product]?, Error?) -> Void)
+    func searchSku(for siteID: Int64,
+                   sku: String,
+                   completion: @escaping (String?, Error?) -> Void)
+    func updateProduct(product: Product, completion: @escaping (Result<Product, Error>) -> Void)
+}
+
+extension ProductsRemoteProtocol {
+    public func loadProducts(for siteID: Int64, by productIDs: [Int64], completion: @escaping (Result<[Product], Error>) -> Void) {
+        loadProducts(for: siteID,
+                     by: productIDs,
+                     pageNumber: ProductsRemote.Default.pageNumber,
+                     pageSize: ProductsRemote.Default.pageSize,
+                     completion: completion)
+    }
 }
 
 /// Product: Remote Endpoints
@@ -33,6 +65,20 @@ public final class ProductsRemote: Remote, ProductsRemoteProtocol {
         } catch {
             completion(.failure(error))
         }
+    }
+
+    /// Deletes a specific `Product`.
+    ///
+    /// - Parameters:
+    ///     - siteID: Site for which we'll delete the remote product.
+    ///     - productID: the ID of the Product to be deleted remotely.
+    ///     - completion: executed upon completion.
+    ///
+    public func deleteProduct(for siteID: Int64, productID: Int64, completion: @escaping (Result<Product, Error>) -> Void) {
+        let path = "\(Path.products)/\(productID)"
+        let request = JetpackRequest(wooApiVersion: .mark3, method: .delete, siteID: siteID, path: path, parameters: nil)
+        let mapper = ProductMapper(siteID: siteID)
+        enqueue(request, mapper: mapper, completion: completion)
     }
 
     /// Retrieves all of the `Products` available.

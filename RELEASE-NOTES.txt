@@ -1,6 +1,19 @@
-5.3
+5.4
 -----
  
+5.3
+-----
+- [**] In Settings > Experimental Features, a Products switch is now available for turning Products M4 features on and off (default off). Products M4 features: add a simple/grouped/external product with actions to publish or save as draft.
+- [*] Opening a product from order details now shows readonly product details of the same styles as in editable product details.
+- [*] Opening a product variation from order details now shows readonly product variation details and this product variation does not appear in the Products tab anymore.
+- [*] Enhancement: when not saving a product as "published", the in-progress modal now shows title and message like "saving your product" instead of "publishing your product".
+- [*] In product and variation list, the stock quantity is not shown anymore when stock management is disabled.
+- [*] Enhancement: when the user attempts to dismiss the product selector search modal while at least one product is selected for a grouped product's linked products, a discard changes action sheet is shown.
+- [internal] Renamed a product database table (Attribute) to GenericAttribute. This adds a new database migration.  [https://github.com/woocommerce/woocommerce-ios/pull/2883]
+- [internal] Refactored the text fields in the Manual Shipment Tracking page. [https://github.com/woocommerce/woocommerce-ios/pull/2979]
+- [internal] Attempt fix for startup crashes. [https://github.com/woocommerce/woocommerce-ios/pull/3069]
+
+
 5.2
 -----
 - [**] Products: now you can editing basic fields for non-core products (whose product type is not simple/external/variable/grouped) - images, name, description, readonly price, readonly inventory, tags, categories, short description, and product settings.
@@ -10,7 +23,6 @@
 - [internal] #2881 Upgraded WPAuth from 1.24 to 1.26-beta.12. Regressions may happen in login flows.
 - [internal] #2896 Configured the same user agent header for all the network requests made through the app.
 - [internal] #2879 After logging out, the persistent store is not reset anymore to fix a crash in SIWA revoked token scenario after app launch (issue #2830). No user-facing changes are intended, the data should be associated with a site after logging out and in like before.
-
 
 5.1
 -----

@@ -64,7 +64,6 @@ final class ProductsViewController: UIViewController {
     /// ResultsController: Surrounds us. Binds the galaxy together. And also, keeps the UITableView <> (Stored) Products in sync.
     ///
     private lazy var resultsController: ResultsController<StorageProduct> = {
-        let siteID = ServiceLocator.stores.sessionManager.defaultStoreID ?? Int64.min
         let resultsController = createResultsController(siteID: siteID)
         configureResultsController(resultsController) { [weak self] in
             self?.tableView.reloadData()
@@ -115,10 +114,6 @@ final class ProductsViewController: UIViewController {
             if filters != oldValue {
                 updateFilterButtonTitle(filters: filters)
 
-                guard let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-                    assertionFailure("No valid site ID for Products tab")
-                    return
-                }
                 resultsController.updatePredicate(siteID: siteID,
                                                   stockStatus: filters.stockStatus,
                                                   productStatus: filters.productStatus,
@@ -132,13 +127,16 @@ final class ProductsViewController: UIViewController {
         }
     }
 
+    private let siteID: Int64
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - View Lifecycle
 
-    init() {
+    init(siteID: Int64) {
+        self.siteID = siteID
         super.init(nibName: nil, bundle: nil)
 
         configureTabBarItem()
@@ -160,18 +158,11 @@ final class ProductsViewController: UIViewController {
         updateTopBannerView()
         observeProductsFeatureSwitchChange()
 
-        startListeningToNotifications()
         syncingCoordinator.resynchronize()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-
-        guard let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-            assertionFailure("No valid site ID for Products tab")
-            return
-        }
-        updateResultsController(siteID: siteID)
 
         if AppRatingManager.shared.shouldPromptForAppReview() {
             displayRatingPrompt()
@@ -185,49 +176,14 @@ final class ProductsViewController: UIViewController {
     }
 }
 
-// MARK: - Notifications
-//
-private extension ProductsViewController {
-
-    /// Wires all of the Notification Hooks
-    ///
-    func startListeningToNotifications() {
-        let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(defaultAccountWasUpdated), name: .defaultAccountWasUpdated, object: nil)
-        nc.addObserver(self, selector: #selector(defaultSiteWasUpdated), name: .StoresManagerDidUpdateDefaultSite, object: nil)
-    }
-
-    /// Runs whenever the default Account is updated.
-    ///
-    @objc func defaultAccountWasUpdated() {
-        syncingCoordinator.resetInternalState()
-    }
-
-    /// Default Site Updated Handler
-    ///
-    @objc func defaultSiteWasUpdated() {
-        guard let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-            return
-        }
-        navigationController?.popToRootViewController(animated: false)
-        updateResultsController(siteID: siteID)
-        tableView.reloadData()
-        syncingCoordinator.resynchronize()
-    }
-}
-
 // MARK: - Navigation Bar Actions
 //
 private extension ProductsViewController {
     @IBAction func displaySearchProducts() {
-        guard let storeID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-            return
-        }
-
         ServiceLocator.analytics.track(.productListMenuSearchTapped)
 
-        let searchViewController = SearchViewController(storeID: storeID,
-                                                        command: ProductSearchUICommand(siteID: storeID),
+        let searchViewController = SearchViewController(storeID: siteID,
+                                                        command: ProductSearchUICommand(siteID: siteID),
                                                         cellType: ProductsTabProductTableViewCell.self)
         let navigationController = WooNavigationController(rootViewController: searchViewController)
 
@@ -242,10 +198,9 @@ private extension ProductsViewController {
         guard let navigationController = navigationController else {
             return
         }
-        guard let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-            assertionFailure("No site ID for creating a product")
-            return
-        }
+
+        ServiceLocator.analytics.track(.productListAddProductTapped)
+
         let coordinatingController = AddProductCoordinator(siteID: siteID, sourceView: sender, sourceNavigationController: navigationController)
         coordinatingController.start()
     }
@@ -279,8 +234,20 @@ private extension ProductsViewController {
             return button
         }()
 
+        updateNavigationBarRightButtonItems()
+    }
+
+    /// Fetches the feature switch value from app settings and updates its navigation bar right button items.
+    func updateNavigationBarRightButtonItems() {
+        let action = AppSettingsAction.loadProductsFeatureSwitch { [weak self] isFeatureSwitchOn in
+            self?.updateNavigationBarRightButtonItems(isProductsFeatureSwitchOn: isFeatureSwitchOn)
+        }
+        ServiceLocator.stores.dispatch(action)
+    }
+
+    func updateNavigationBarRightButtonItems(isProductsFeatureSwitchOn: Bool) {
         var rightBarButtonItems = [UIBarButtonItem]()
-        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.editProductsRelease4) {
+        if isProductsFeatureSwitchOn {
             let buttonItem: UIBarButtonItem = {
                 let button = UIBarButtonItem(image: .plusImage,
                                              style: .plain,
@@ -402,14 +369,16 @@ private extension ProductsViewController {
 private extension ProductsViewController {
     func observeProductsFeatureSwitchChange() {
         NotificationCenter.default.addObserver(forName: .ProductsFeatureSwitchDidChange, object: nil, queue: nil) { [weak self] _ in
-            self?.updateTopBannerView()
+            guard let self = self else { return }
+            self.updateTopBannerView()
+            self.updateNavigationBarRightButtonItems()
         }
     }
 
     /// Fetches products feedback visibility from AppSettingsStore and update products top banner accordingly
     ///
     func updateTopBannerView() {
-        let action = AppSettingsAction.loadFeedbackVisibility(type: .productsM3) { [weak self] result in
+        let action = AppSettingsAction.loadFeedbackVisibility(type: .productsM4) { [weak self] result in
             switch result {
             case .success(let visible):
                 if visible {
@@ -454,13 +423,6 @@ private extension ProductsViewController {
     func updateTableHeaderViewHeight() {
         topStackView.spacing = topBannerContainerView.subviews.isNotEmpty ? Constants.headerViewSpacing : 0
         tableView.updateHeaderHeight()
-    }
-
-    func updateResultsController(siteID: Int64) {
-        resultsController = createResultsController(siteID: siteID)
-        configureResultsController(resultsController) { [weak self] in
-            self?.tableView.reloadData()
-        }
     }
 
     func createResultsController(siteID: Int64) -> ResultsController<StorageProduct> {
@@ -611,11 +573,11 @@ private extension ProductsViewController {
     ///
     func presentProductsFeedback() {
         // Present survey
-        let navigationController = SurveyCoordinatingController(survey: .productsM3Feedback)
+        let navigationController = SurveyCoordinatingController(survey: .productsM4Feedback)
         present(navigationController, animated: true) { [weak self] in
 
             // Mark survey as given and update top banner view
-            let action = AppSettingsAction.updateFeedbackStatus(type: .productsM3, status: .given(Date())) { result in
+            let action = AppSettingsAction.updateFeedbackStatus(type: .productsM4, status: .given(Date())) { result in
                 if let error = result.failure {
                     CrashLogging.logError(error)
                 }
@@ -628,7 +590,7 @@ private extension ProductsViewController {
     /// Mark feedback request as dismissed and update banner visibility
     ///
     func dismissProductsBanner() {
-        let action = AppSettingsAction.updateFeedbackStatus(type: .productsM3, status: .dismissed) { [weak self] result in
+        let action = AppSettingsAction.updateFeedbackStatus(type: .productsM4, status: .dismissed) { [weak self] result in
             if let error = result.failure {
                 CrashLogging.logError(error)
             }
@@ -708,11 +670,6 @@ extension ProductsViewController: SyncingCoordinatorDelegate {
     /// Synchronizes the Products for the Default Store (if any).
     ///
     func sync(pageNumber: Int, pageSize: Int, reason: String? = nil, onCompletion: ((Bool) -> Void)? = nil) {
-        guard let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
-            onCompletion?(false)
-            return
-        }
-
         transitionToSyncingState(pageNumber: pageNumber)
 
         let action = ProductAction

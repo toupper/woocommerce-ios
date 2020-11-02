@@ -40,7 +40,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
     private let productUIImageLoader: ProductUIImageLoader
 
     private let currency: String
-    private let isEditProductsRelease3Enabled: Bool
+    private let isEditProductsRelease5Enabled: Bool
 
     private lazy var exitForm: () -> Void = {
         presentationStyle.createExitForm(viewController: self)
@@ -60,12 +60,12 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
          productImageActionHandler: ProductImageActionHandler,
          currency: String = ServiceLocator.currencySettings.symbol(from: ServiceLocator.currencySettings.currencyCode),
          presentationStyle: ProductFormPresentationStyle,
-         isEditProductsRelease3Enabled: Bool) {
+         isEditProductsRelease5Enabled: Bool) {
         self.viewModel = viewModel
         self.eventLogger = eventLogger
         self.currency = currency
         self.presentationStyle = presentationStyle
-        self.isEditProductsRelease3Enabled = isEditProductsRelease3Enabled
+        self.isEditProductsRelease5Enabled = isEditProductsRelease5Enabled
         self.productImageActionHandler = productImageActionHandler
         self.productUIImageLoader = DefaultProductUIImageLoader(productImageActionHandler: productImageActionHandler,
                                                                 phAssetImageLoaderProvider: { PHImageManager.default() })
@@ -74,8 +74,7 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
                                                                currency: currency)
         self.tableViewDataSource = ProductFormTableViewDataSource(viewModel: tableViewModel,
                                                                   productImageStatuses: productImageActionHandler.productImageStatuses,
-                                                                  productUIImageLoader: productUIImageLoader,
-                                                                  canEditImages: true)
+                                                                  productUIImageLoader: productUIImageLoader)
         super.init(nibName: "ProductFormViewController", bundle: nil)
         tableViewDataSource.configureActions(onNameChange: { [weak self] name in
             self?.onEditProductNameCompletion(newName: name ?? "")
@@ -169,11 +168,16 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
     }
 
     @objc func publishProduct() {
-        // TODO-2766: M4 analytics
+        if viewModel.formType == .add {
+            ServiceLocator.analytics.track(.addProductPublishTapped, withProperties: ["product_type": product.productType.rawValue])
+        }
         saveProduct()
     }
 
     func saveProductAsDraft() {
+        if viewModel.formType == .add {
+            ServiceLocator.analytics.track(.addProductSaveAsDraftTapped, withProperties: ["product_type": product.productType.rawValue])
+        }
         saveProduct(status: .draft)
     }
 
@@ -197,7 +201,6 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
 
         if viewModel.canSaveAsDraft() {
             actionSheet.addDefaultActionWithTitle(ActionSheetStrings.saveProductAsDraft) { [weak self] _ in
-                // TODO-2766: M4 analytics
                 self?.saveProductAsDraft()
             }
         }
@@ -217,9 +220,11 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
             }
         }
 
-        actionSheet.addDefaultActionWithTitle(ActionSheetStrings.productSettings) { [weak self] _ in
-            ServiceLocator.analytics.track(.productDetailViewSettingsButtonTapped)
-            self?.displayProductSettings()
+        if viewModel.canEditProductSettings() {
+            actionSheet.addDefaultActionWithTitle(ActionSheetStrings.productSettings) { [weak self] _ in
+                ServiceLocator.analytics.track(.productDetailViewSettingsButtonTapped)
+                self?.displayProductSettings()
+            }
         }
 
         if viewModel.canDeleteProduct() {
@@ -249,7 +254,10 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
         case .primaryFields(let rows):
             let row = rows[indexPath.row]
             switch row {
-            case .description:
+            case .description(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 eventLogger.logDescriptionTapped()
                 editProductDescription()
             default:
@@ -267,6 +275,9 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
             case .reviews:
                 ServiceLocator.analytics.track(.productDetailViewReviewsTapped)
                 showReviews()
+            case .downloadableFiles:
+                //TODO: Add analytics
+                showDownloadableFiles()
             case .productType(_, let isEditable):
                 guard isEditable else {
                     return
@@ -274,7 +285,10 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
                 ServiceLocator.analytics.track(.productDetailViewProductTypeTapped)
                 let cell = tableView.cellForRow(at: indexPath)
                 editProductType(cell: cell)
-            case .shipping:
+            case .shipping(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 eventLogger.logShippingSettingsTapped()
                 editShippingSettings()
             case .inventory(_, let isEditable):
@@ -283,24 +297,42 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
                 }
                 eventLogger.logInventorySettingsTapped()
                 editInventorySettings()
-            case .categories:
+            case .categories(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewCategoriesTapped)
                 editCategories()
-            case .tags:
+            case .tags(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewTagsTapped)
                 editTags()
-            case .briefDescription:
+            case .briefDescription(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewShortDescriptionTapped)
                 editShortDescription()
-            case .externalURL:
+            case .externalURL(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewExternalProductLinkTapped)
                 editExternalLink()
                 break
-            case .sku:
+            case .sku(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewSKUTapped)
                 editSKU()
                 break
-            case .groupedProducts:
+            case .groupedProducts(_, let isEditable):
+                guard isEditable else {
+                    return
+                }
                 ServiceLocator.analytics.track(.productDetailViewGroupedProductsTapped)
                 editGroupedProducts()
                 break
@@ -310,7 +342,8 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
                     return
                 }
                 let variationsViewController = ProductVariationsViewController(product: product.product,
-                                                                               isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                                                               formType: viewModel.formType,
+                                                                               isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
                 show(variationsViewController, sender: self)
             case .status, .noPriceWarning:
                 break
@@ -446,8 +479,7 @@ private extension ProductFormViewController {
                                                           currency: currency)
         tableViewDataSource = ProductFormTableViewDataSource(viewModel: tableViewModel,
                                                              productImageStatuses: productImageActionHandler.productImageStatuses,
-                                                             productUIImageLoader: productUIImageLoader,
-                                                             canEditImages: true)
+                                                             productUIImageLoader: productUIImageLoader)
         tableViewDataSource.configureActions(onNameChange: { [weak self] name in
             self?.onEditProductNameCompletion(newName: name ?? "")
         }, onStatusChange: { [weak self] isEnabled in
@@ -463,8 +495,7 @@ private extension ProductFormViewController {
     func onImageStatusesUpdated(statuses: [ProductImageStatus]) {
         tableViewDataSource = ProductFormTableViewDataSource(viewModel: tableViewModel,
                                                              productImageStatuses: statuses,
-                                                             productUIImageLoader: productUIImageLoader,
-                                                             canEditImages: true)
+                                                             productUIImageLoader: productUIImageLoader)
         tableViewDataSource.configureActions(onNameChange: { [weak self] name in
             self?.onEditProductNameCompletion(newName: name ?? "")
         }, onStatusChange: { [weak self] isEnabled in
@@ -523,9 +554,19 @@ private extension ProductFormViewController {
 //
 private extension ProductFormViewController {
     func saveProduct(status: ProductStatus? = nil) {
-        let title = NSLocalizedString("Publishing your product...", comment: "Title of the in-progress UI while updating the Product remotely")
-        let message = NSLocalizedString("Please wait while we publish this product to your store",
+        let productStatus = status ?? product.status
+        let title: String
+        let message: String
+        switch productStatus {
+        case .publish:
+            title = NSLocalizedString("Publishing your product...", comment: "Title of the in-progress UI while updating the Product remotely")
+            message = NSLocalizedString("Please wait while we publish this product to your store",
                                         comment: "Message of the in-progress UI while updating the Product remotely")
+        default:
+            title = NSLocalizedString("Saving your product...", comment: "Title of the in-progress UI while saving a Product as draft remotely")
+            message = NSLocalizedString("Please wait while we save this product to your store",
+                                        comment: "Message of the in-progress UI while saving a Product as draft remotely")
+        }
         displayInProgressView(title: title, message: message)
 
         saveImagesAndProductRemotely(status: status)
@@ -669,7 +710,7 @@ private extension ProductFormViewController {
         let viewController = ProductSettingsViewController(product: product.product,
                                                            password: password,
                                                            formType: viewModel.formType,
-                                                           isEditProductsRelease3Enabled: isEditProductsRelease3Enabled,
+                                                           isEditProductsRelease5Enabled: isEditProductsRelease5Enabled,
                                                            completion: { [weak self] (productSettings) in
             guard let self = self else {
                 return
@@ -705,9 +746,11 @@ private extension ProductFormViewController {
             if isUpdateEnabled {
                 rightBarButtonItems.append(createUpdateBarButtonItem())
             }
+        case .readonly:
+            break
         }
 
-        if viewModel.canEditProductSettings() {
+        if viewModel.shouldShowMoreOptionsMenu() {
             rightBarButtonItems.insert(createMoreOptionsBarButtonItem(), at: 0)
         }
 
@@ -773,6 +816,8 @@ private extension ProductFormViewController {
             UIAlertController.presentDiscardChangesActionSheet(viewController: self, onDiscard: { [weak self] in
                 self?.exitForm()
             })
+        case .readonly:
+            break
         }
     }
 }
@@ -968,7 +1013,7 @@ private extension ProductFormViewController {
         }
         let originalData = ProductInventoryEditableData(productModel: product)
         let hasChangedData = originalData != data
-        ServiceLocator.analytics.track(.productInventorySettingsDoneButtonTapped, withProperties: ["has_changed_data": hasChangedData])
+        //TODO: Add analytics
 
         guard hasChangedData else {
             return
@@ -1160,6 +1205,33 @@ private extension ProductFormViewController {
 private extension ProductFormViewController {
     func onEditStatusCompletion(isEnabled: Bool) {
         viewModel.updateStatus(isEnabled)
+    }
+}
+
+// MARK: Action - Edit Product Downloads
+//
+private extension ProductFormViewController {
+    func showDownloadableFiles() {
+        guard let product = product as? EditableProductModel, product.downloadable  else {
+            return
+        }
+
+        let downloadFileListViewController = ProductDownloadListViewController(product: product) { [weak self] (data, hasUnsavedChanges) in
+            self?.onAddEditDownloadsCompletion(data: data, hasUnsavedChanges: hasUnsavedChanges)
+        }
+        navigationController?.pushViewController(downloadFileListViewController, animated: true)
+    }
+
+    func onAddEditDownloadsCompletion(data: ProductDownloadsEditableData,
+                                      hasUnsavedChanges: Bool) {
+        defer {
+            navigationController?.popViewController(animated: true)
+        }
+
+        guard hasUnsavedChanges else {
+            return
+        }
+        viewModel.updateDownloadableFiles(downloadableFiles: data.downloadableFiles, downloadLimit: data.downloadLimit, downloadExpiry: data.downloadExpiry)
     }
 }
 

@@ -59,7 +59,7 @@ final class ProductFormViewModel: ProductFormViewModelProtocol {
 
             actionsFactory = ProductFormActionsFactory(product: product,
                                                        formType: formType,
-                                                       isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                                       isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
             productSubject.send(product)
         }
     }
@@ -80,7 +80,6 @@ final class ProductFormViewModel: ProductFormViewModelProtocol {
     }
 
     private let productImageActionHandler: ProductImageActionHandler
-    private let isEditProductsRelease3Enabled: Bool
     private let isEditProductsRelease5Enabled: Bool
 
     private var cancellable: ObservationToken?
@@ -88,17 +87,15 @@ final class ProductFormViewModel: ProductFormViewModelProtocol {
     init(product: EditableProductModel,
          formType: ProductFormType,
          productImageActionHandler: ProductImageActionHandler,
-         isEditProductsRelease3Enabled: Bool,
          isEditProductsRelease5Enabled: Bool) {
         self.formType = formType
         self.productImageActionHandler = productImageActionHandler
-        self.isEditProductsRelease3Enabled = isEditProductsRelease3Enabled
         self.isEditProductsRelease5Enabled = isEditProductsRelease5Enabled
         self.originalProduct = product
         self.product = product
         self.actionsFactory = ProductFormActionsFactory(product: product,
                                                         formType: formType,
-                                                        isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                                        isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
         self.isUpdateEnabledSubject = PublishSubject<Bool>()
 
         self.cancellable = productImageActionHandler.addUpdateObserver(self) { [weak self] allStatuses in
@@ -125,15 +122,15 @@ extension ProductFormViewModel {
     }
 
     func canEditProductSettings() -> Bool {
-        return true
+        formType != .readonly
     }
 
     func canViewProductInStore() -> Bool {
-        originalProduct.product.productStatus == .publish && formType == .edit
+        originalProduct.product.productStatus == .publish && formType != .add
     }
 
     func canShareProduct() -> Bool {
-        formType == .edit
+        formType != .add
     }
 
     func canDeleteProduct() -> Bool {
@@ -230,6 +227,7 @@ extension ProductFormViewModel {
                                                                      featured: settings.featured,
                                                                      catalogVisibilityKey: settings.catalogVisibility.rawValue,
                                                                      virtual: settings.virtual,
+                                                                     downloadable: settings.downloadable,
                                                                      reviewsAllowed: settings.reviewsAllowed,
                                                                      purchaseNote: settings.purchaseNote,
                                                                      menuOrder: settings.menuOrder))
@@ -242,6 +240,12 @@ extension ProductFormViewModel {
 
     func updateStatus(_ isEnabled: Bool) {
         // no-op: visibility is editable in product settings for `Product`
+    }
+
+    func updateDownloadableFiles(downloadableFiles: [ProductDownload], downloadLimit: Int64, downloadExpiry: Int64) {
+        product = EditableProductModel(product: product.product.copy(downloads: downloadableFiles,
+                                                                     downloadLimit: downloadLimit,
+                                                                     downloadExpiry: downloadExpiry))
     }
 }
 
@@ -290,6 +294,8 @@ extension ProductFormViewModel {
                                                     onCompletion(.failure(error))
                                                 }
             }
+        case .readonly:
+            assertionFailure("Trying to save a product remotely in readonly mode")
         }
     }
 

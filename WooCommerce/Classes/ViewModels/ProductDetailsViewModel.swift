@@ -57,6 +57,8 @@ final class ProductDetailsViewModel {
         return product.productID
     }
 
+    let isEditProductsRelease5Enabled: Bool
+
     // MARK: - private variables
 
     /// Sections to be rendered
@@ -120,8 +122,9 @@ final class ProductDetailsViewModel {
 
     /// Designated initializer.
     ///
-    init(product: Product) {
+    init(product: Product, isEditProductsRelease5Enabled: Bool) {
         self.product = product
+        self.isEditProductsRelease5Enabled = isEditProductsRelease5Enabled
 
         refreshResultsController()
     }
@@ -494,7 +497,7 @@ extension ProductDetailsViewModel {
                                               comment: "'Limit: 1 download', for example.")
         let limitPlural = NSLocalizedString("Limit: %ld downloads",
                                             comment: "'Limit: 2 downloads', for example.")
-        let limitText = String.pluralize(product.downloadLimit,
+        let limitText = String.pluralize(Int(product.downloadLimit),
                                          singular: limitSingular,
                                          plural: limitPlural)
 
@@ -502,7 +505,7 @@ extension ProductDetailsViewModel {
         let expirationSingular = NSLocalizedString("Expiry: %ld day", comment: "Expiry: 1 day")
         let expirationPlural = NSLocalizedString("Expiry: %ld days",
                                                  comment: "For example: 'Expiry: 30 days'")
-        let expirationText = String.pluralize(product.downloadExpiry,
+        let expirationText = String.pluralize(Int(product.downloadExpiry),
                                               singular: expirationSingular,
                                               plural: expirationPlural)
 
@@ -710,7 +713,8 @@ extension ProductDetailsViewModel {
         case .productVariants:
             ServiceLocator.analytics.track(.productDetailViewVariationsTapped)
             let variationsViewController = ProductVariationsViewController(product: product,
-                                                                           isEditProductsRelease3Enabled: false)
+                                                                           formType: .readonly,
+                                                                           isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
             sender.navigationController?.pushViewController(variationsViewController, animated: true)
         default:
             break
@@ -724,15 +728,17 @@ extension ProductDetailsViewModel {
 
     func syncProduct(onCompletion: ((Error?) -> ())? = nil) {
         let action = ProductAction.retrieveProduct(siteID: product.siteID,
-                                                   productID: product.productID) { [weak self] (product, error) in
-            guard let self = self, let product = product else {
-                DDLogError("⛔️ Error synchronizing Product: \(error.debugDescription)")
-                onCompletion?(error)
-                return
-            }
+                                                   productID: product.productID) { [weak self] result in
+                                                    guard let self = self else { return }
 
-            self.product = product
-            onCompletion?(nil)
+                                                    switch result {
+                                                    case .failure(let error):
+                                                        DDLogError("⛔️ Error synchronizing Product: \(error)")
+                                                        onCompletion?(error)
+                                                    case .success(let product):
+                                                        self.product = product
+                                                        onCompletion?(nil)
+                                                    }
         }
 
         ServiceLocator.stores.dispatch(action)

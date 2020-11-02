@@ -4,6 +4,7 @@ import Yosemite
 enum ProductFormType {
     case add
     case edit
+    case readonly
 }
 
 /// A view model for `ProductFormViewController` to add/edit a generic product model (e.g. `Product` or `ProductVariation`).
@@ -90,6 +91,8 @@ protocol ProductFormViewModelProtocol {
 
     func updateStatus(_ isEnabled: Bool)
 
+    func updateDownloadableFiles(downloadableFiles: [ProductDownload], downloadLimit: Int64, downloadExpiry: Int64)
+
     // Remote action
 
     /// Creates/updates a product remotely given an optional product status to override.
@@ -103,4 +106,10 @@ protocol ProductFormViewModelProtocol {
     // Reset action
 
     func resetPassword(_ password: String?)
+}
+
+extension ProductFormViewModelProtocol {
+    func shouldShowMoreOptionsMenu() -> Bool {
+        canSaveAsDraft() || canEditProductSettings() || canViewProductInStore() || canShareProduct() || canDeleteProduct()
+    }
 }

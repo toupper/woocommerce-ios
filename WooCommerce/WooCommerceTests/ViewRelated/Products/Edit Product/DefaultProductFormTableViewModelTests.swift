@@ -11,7 +11,9 @@ final class DefaultProductFormTableViewModelTests: XCTestCase {
                                                    manageStock: false,
                                                    stockStatusKey: ProductStockStatus.onBackOrder.rawValue)
         let model = EditableProductModel(product: product)
-        let actionsFactory = ProductFormActionsFactory(product: model, formType: .edit, isEditProductsRelease3Enabled: true)
+        let actionsFactory = ProductFormActionsFactory(product: model,
+                                                       formType: .edit,
+                                                       isEditProductsRelease5Enabled: false)
 
         // Action
         let tableViewModel = DefaultProductFormTableViewModel(product: model, actionsFactory: actionsFactory, currency: "")
@@ -38,7 +40,9 @@ final class DefaultProductFormTableViewModelTests: XCTestCase {
                                                    manageStock: false,
                                                    stockStatusKey: ProductStockStatus.onBackOrder.rawValue)
         let model = EditableProductModel(product: product)
-        let actionsFactory = ProductFormActionsFactory(product: model, formType: .edit, isEditProductsRelease3Enabled: true)
+        let actionsFactory = ProductFormActionsFactory(product: model,
+                                                       formType: .edit,
+                                                       isEditProductsRelease5Enabled: false)
 
         // Action
         let tableViewModel = DefaultProductFormTableViewModel(product: model, actionsFactory: actionsFactory, currency: "")

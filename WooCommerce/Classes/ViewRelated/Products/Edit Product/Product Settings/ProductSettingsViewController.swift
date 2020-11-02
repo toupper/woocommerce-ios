@@ -24,13 +24,13 @@ final class ProductSettingsViewController: UIViewController {
     init(product: Product,
          password: String?,
          formType: ProductFormType,
-         isEditProductsRelease3Enabled: Bool,
+         isEditProductsRelease5Enabled: Bool,
          completion: @escaping Completion,
          onPasswordRetrieved: @escaping PasswordRetrievedCompletion) {
         viewModel = ProductSettingsViewModel(product: product,
                                              password: password,
                                              formType: formType,
-                                             isEditProductsRelease3Enabled: isEditProductsRelease3Enabled)
+                                             isEditProductsRelease5Enabled: isEditProductsRelease5Enabled)
         onCompletion = completion
         onPasswordCompletion = onPasswordRetrieved
         super.init(nibName: nil, bundle: nil)

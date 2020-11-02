@@ -11,6 +11,7 @@ final class TopPerformerDataViewController: UIViewController {
     // MARK: - Properties
 
     private let granularity: StatGranularity
+    private let siteID: Int64
 
     var hasTopEarnerStatsItems: Bool {
         return (topEarnerStats?.items?.count ?? 0) > 0
@@ -60,7 +61,8 @@ final class TopPerformerDataViewController: UIViewController {
 
     /// Designated Initializer
     ///
-    init(granularity: StatGranularity) {
+    init(siteID: Int64, granularity: StatGranularity) {
+        self.siteID = siteID
         self.granularity = granularity
         super.init(nibName: type(of: self).nibName, bundle: nil)
     }
@@ -223,10 +225,10 @@ extension TopPerformerDataViewController: UITableViewDataSource {
 extension TopPerformerDataViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        guard let statsItem = statsItem(at: indexPath), let siteID = ServiceLocator.stores.sessionManager.defaultStoreID else {
+        guard let statsItem = statsItem(at: indexPath) else {
             return
         }
-        presentProductDetails(for: statsItem.productID, siteID: siteID)
+        presentProductDetails(statsItem: statsItem)
     }
 
     func tableView(_ tableView: UITableView, estimatedHeightForHeaderInSection section: Int) -> CGFloat {
@@ -243,10 +245,10 @@ extension TopPerformerDataViewController: UITableViewDelegate {
 
 private extension TopPerformerDataViewController {
 
-    /// Presents the ProductDetailsViewController or the ProductFormViewController, as a childViewController, for a given Product.
+    /// Presents the product details for a given TopEarnerStatsItem.
     ///
-    func presentProductDetails(for productID: Int64, siteID: Int64) {
-        let loaderViewController = ProductLoaderViewController(productID: productID,
+    func presentProductDetails(statsItem: TopEarnerStatsItem) {
+        let loaderViewController = ProductLoaderViewController(model: .init(topEarnerStatsItem: statsItem),
                                                                siteID: siteID,
                                                                forceReadOnly: false)
         let navController = WooNavigationController(rootViewController: loaderViewController)

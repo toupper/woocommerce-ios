@@ -32,14 +32,14 @@ private extension DefaultProductFormTableViewModel {
     func primaryFieldRows(product: ProductFormDataModel, actions: [ProductFormEditAction]) -> [ProductFormSection.PrimaryFieldRow] {
         return actions.map { action in
             switch action {
-            case .images:
-                return .images
-            case .name:
-                return .name(name: product.name)
+            case .images(let editable):
+                return .images(isEditable: editable)
+            case .name(let editable):
+                return .name(name: product.name, isEditable: editable)
             case .variationName:
                 return .variationName(name: product.name)
-            case .description:
-                return .description(description: product.trimmedFullDescription)
+            case .description(let editable):
+                return .description(description: product.trimmedFullDescription, isEditable: editable)
             default:
                 fatalError("Unexpected action in the primary section: \(action)")
             }
@@ -60,36 +60,32 @@ private extension DefaultProductFormTableViewModel {
     func settingsRows(product: EditableProductModel, actions: [ProductFormEditAction]) -> [ProductFormSection.SettingsRow] {
         return actions.compactMap { action in
             switch action {
-            case .priceSettings:
-                return .price(viewModel: priceSettingsRow(product: product), isEditable: true)
-            case .readonlyPriceSettings:
-                return .price(viewModel: priceSettingsRow(product: product, isEditable: false), isEditable: false)
+            case .priceSettings(let editable):
+                return .price(viewModel: priceSettingsRow(product: product, isEditable: editable), isEditable: editable)
             case .reviews:
                 return .reviews(viewModel: reviewsRow(product: product), ratingCount: product.ratingCount, averageRating: product.averageRating)
-            case .productType:
-                return .productType(viewModel: productTypeRow(product: product), isEditable: true)
-            case .readonlyProductType:
-                return .productType(viewModel: productTypeRow(product: product, isEditable: false), isEditable: false)
-            case .shippingSettings:
-                return .shipping(viewModel: shippingSettingsRow(product: product))
-            case .inventorySettings:
-                return .inventory(viewModel: inventorySettingsRow(product: product), isEditable: true)
-            case .readonlyInventorySettings:
-                return .inventory(viewModel: inventorySettingsRow(product: product, isEditable: false), isEditable: false)
-            case .categories:
-                return .categories(viewModel: categoriesRow(product: product.product))
-            case .tags:
-                return .tags(viewModel: tagsRow(product: product.product))
-            case .briefDescription:
-                return .briefDescription(viewModel: briefDescriptionRow(product: product.product))
-            case .externalURL:
-                return .externalURL(viewModel: externalURLRow(product: product.product))
-            case .sku:
-                return .sku(viewModel: skuRow(product: product.product))
-            case .groupedProducts:
-                return .groupedProducts(viewModel: groupedProductsRow(product: product.product))
+            case .productType(let editable):
+                return .productType(viewModel: productTypeRow(product: product, isEditable: editable), isEditable: editable)
+            case .shippingSettings(let editable):
+                return .shipping(viewModel: shippingSettingsRow(product: product, isEditable: editable), isEditable: editable)
+            case .inventorySettings(let editable):
+                return .inventory(viewModel: inventorySettingsRow(product: product, isEditable: editable), isEditable: editable)
+            case .categories(let editable):
+                return .categories(viewModel: categoriesRow(product: product.product, isEditable: editable), isEditable: editable)
+            case .tags(let editable):
+                return .tags(viewModel: tagsRow(product: product.product, isEditable: editable), isEditable: editable)
+            case .briefDescription(let editable):
+                return .briefDescription(viewModel: briefDescriptionRow(product: product.product, isEditable: editable), isEditable: editable)
+            case .externalURL(let editable):
+                return .externalURL(viewModel: externalURLRow(product: product.product, isEditable: editable), isEditable: editable)
+            case .sku(let editable):
+                return .sku(viewModel: skuRow(product: product.product, isEditable: editable), isEditable: editable)
+            case .groupedProducts(let editable):
+                return .groupedProducts(viewModel: groupedProductsRow(product: product.product, isEditable: editable), isEditable: editable)
             case .variations:
                 return .variations(viewModel: variationsRow(product: product.product))
+            case .downloadableFiles:
+                return .downloadableFiles(viewModel: downloadsRow(product: product))
             default:
                 assertionFailure("Unexpected action in the settings section: \(action)")
                 return nil
@@ -100,14 +96,14 @@ private extension DefaultProductFormTableViewModel {
     func settingsRows(productVariation: EditableProductVariationModel, actions: [ProductFormEditAction]) -> [ProductFormSection.SettingsRow] {
         return actions.compactMap { action in
             switch action {
-            case .priceSettings:
-                return .price(viewModel: variationPriceSettingsRow(productVariation: productVariation), isEditable: true)
-            case .shippingSettings:
-                return .shipping(viewModel: shippingSettingsRow(product: productVariation))
-            case .inventorySettings:
-                return .inventory(viewModel: inventorySettingsRow(product: productVariation), isEditable: true)
-            case .status:
-                return .status(viewModel: variationStatusRow(productVariation: productVariation))
+            case .priceSettings(let editable):
+                return .price(viewModel: variationPriceSettingsRow(productVariation: productVariation, isEditable: editable), isEditable: editable)
+            case .shippingSettings(let editable):
+                return .shipping(viewModel: shippingSettingsRow(product: productVariation, isEditable: editable), isEditable: editable)
+            case .inventorySettings(let editable):
+                return .inventory(viewModel: inventorySettingsRow(product: productVariation, isEditable: editable), isEditable: editable)
+            case .status(let editable):
+                return .status(viewModel: variationStatusRow(productVariation: productVariation, isEditable: editable), isEditable: editable)
             case .noPriceWarning:
                 return .noPriceWarning(viewModel: noPriceWarningRow())
             default:
@@ -119,7 +115,7 @@ private extension DefaultProductFormTableViewModel {
 }
 
 private extension DefaultProductFormTableViewModel {
-    func priceSettingsRow(product: ProductFormDataModel, isEditable: Bool = true) -> ProductFormSection.SettingsRow.ViewModel {
+    func priceSettingsRow(product: ProductFormDataModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.priceImage
 
         var priceDetails = [String]()
@@ -162,10 +158,14 @@ private extension DefaultProductFormTableViewModel {
                                                         isActionable: isEditable)
     }
 
-    func variationPriceSettingsRow(productVariation: EditableProductVariationModel) -> ProductFormSection.SettingsRow.ViewModel {
-        let priceViewModel = priceSettingsRow(product: productVariation)
+    func variationPriceSettingsRow(productVariation: EditableProductVariationModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
+        let priceViewModel = priceSettingsRow(product: productVariation, isEditable: isEditable)
         let tintColor = productVariation.isEnabledAndMissingPrice ? UIColor.warning: nil
-        return .init(icon: priceViewModel.icon, title: priceViewModel.title, details: priceViewModel.details, tintColor: tintColor)
+        return .init(icon: priceViewModel.icon,
+                     title: priceViewModel.title,
+                     details: priceViewModel.details,
+                     tintColor: tintColor,
+                     isActionable: priceViewModel.isActionable)
     }
 
     func reviewsRow(product: ProductFormDataModel) -> ProductFormSection.SettingsRow.ViewModel {
@@ -187,7 +187,7 @@ private extension DefaultProductFormTableViewModel {
                                                         details: details)
     }
 
-    func inventorySettingsRow(product: ProductFormDataModel, isEditable: Bool = true) -> ProductFormSection.SettingsRow.ViewModel {
+    func inventorySettingsRow(product: ProductFormDataModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.inventoryImage
         let title = Constants.inventorySettingsTitle
 
@@ -212,7 +212,7 @@ private extension DefaultProductFormTableViewModel {
                                                         isActionable: isEditable)
     }
 
-    func productTypeRow(product: ProductFormDataModel, isEditable: Bool = true) -> ProductFormSection.SettingsRow.ViewModel {
+    func productTypeRow(product: ProductFormDataModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.productImage
         let title = Constants.productTypeTitle
 
@@ -238,7 +238,7 @@ private extension DefaultProductFormTableViewModel {
                                                         isActionable: isEditable)
     }
 
-    func shippingSettingsRow(product: ProductFormDataModel) -> ProductFormSection.SettingsRow.ViewModel {
+    func shippingSettingsRow(product: ProductFormDataModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.shippingImage
         let title = Constants.shippingSettingsTitle
 
@@ -281,24 +281,25 @@ private extension DefaultProductFormTableViewModel {
         let details: String? = shippingDetails.isEmpty ? nil: shippingDetails.joined(separator: "\n")
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
-                                                        details: details)
+                                                        details: details,
+                                                        isActionable: isEditable)
     }
 
-    func categoriesRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func categoriesRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.categoriesIcon
         let title = Constants.categoriesTitle
         let details = product.categoriesDescription() ?? Constants.categoriesPlaceholder
-        return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details)
+        return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details, isActionable: isEditable)
     }
 
-    func tagsRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func tagsRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.tagsIcon
         let title = Constants.tagsTitle
         let details = product.tagsDescription() ?? Constants.tagsPlaceholder
-        return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details)
+        return ProductFormSection.SettingsRow.ViewModel(icon: icon, title: title, details: details, isActionable: isEditable)
     }
 
-    func briefDescriptionRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func briefDescriptionRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.briefDescriptionImage
         let title = Constants.briefDescriptionTitle
         let details = product.trimmedBriefDescription?.isNotEmpty == true ? product.trimmedBriefDescription: Constants.briefDescriptionPlaceholder
@@ -306,12 +307,13 @@ private extension DefaultProductFormTableViewModel {
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
                                                         details: details,
-                                                        numberOfLinesForDetails: 1)
+                                                        numberOfLinesForDetails: 1,
+                                                        isActionable: isEditable)
     }
 
     // MARK: Affiliate products only
 
-    func externalURLRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func externalURLRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.linkImage
         let title = product.externalURL?.isNotEmpty == true ? Constants.externalURLTitle: Constants.addExternalURLTitle
         let details = product.externalURL
@@ -319,10 +321,11 @@ private extension DefaultProductFormTableViewModel {
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
                                                         details: details,
-                                                        numberOfLinesForDetails: 1)
+                                                        numberOfLinesForDetails: 1,
+                                                        isActionable: isEditable)
     }
 
-    func skuRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func skuRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.inventoryImage
         let title = Constants.skuTitle
         let details = product.sku
@@ -330,12 +333,13 @@ private extension DefaultProductFormTableViewModel {
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
                                                         details: details,
-                                                        numberOfLinesForDetails: 1)
+                                                        numberOfLinesForDetails: 1,
+                                                        isActionable: isEditable)
     }
 
     // MARK: Grouped products only
 
-    func groupedProductsRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
+    func groupedProductsRow(product: Product, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.widgetsImage
         let title = product.groupedProducts.isEmpty ? Constants.addGroupedProductsTitle: Constants.groupedProductsTitle
         let details: String
@@ -352,7 +356,8 @@ private extension DefaultProductFormTableViewModel {
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
                                                         details: details,
-                                                        numberOfLinesForDetails: 1)
+                                                        numberOfLinesForDetails: 1,
+                                                        isActionable: isEditable)
     }
 
     // MARK: Variable products only
@@ -381,7 +386,7 @@ private extension DefaultProductFormTableViewModel {
 
     // MARK: Product variation only
 
-    func variationStatusRow(productVariation: EditableProductVariationModel) -> ProductFormSection.SettingsRow.SwitchableViewModel {
+    func variationStatusRow(productVariation: EditableProductVariationModel, isEditable: Bool) -> ProductFormSection.SettingsRow.SwitchableViewModel {
         let icon = UIImage.visibilityImage
         let title = Constants.variationStatusTitle
         let viewModel = ProductFormSection.SettingsRow.ViewModel(icon: icon,
@@ -389,13 +394,34 @@ private extension DefaultProductFormTableViewModel {
                                                                  details: nil,
                                                                  isActionable: false)
         let isSwitchOn = productVariation.isEnabled
-        return ProductFormSection.SettingsRow.SwitchableViewModel(viewModel: viewModel, isSwitchOn: isSwitchOn)
+        return ProductFormSection.SettingsRow.SwitchableViewModel(viewModel: viewModel, isSwitchOn: isSwitchOn, isActionable: isEditable)
     }
 
     func noPriceWarningRow() -> ProductFormSection.SettingsRow.WarningViewModel {
         let icon = UIImage.infoOutlineImage
         let title = Constants.noPriceWarningTitle
         return ProductFormSection.SettingsRow.WarningViewModel(icon: icon, title: title)
+    }
+
+    // MARK: Product downloads only
+
+    func downloadsRow(product: ProductFormDataModel) -> ProductFormSection.SettingsRow.ViewModel {
+        let icon = UIImage.cloudImage
+        let title = Constants.downloadsTitle
+        var details = Constants.emptyDownloads
+
+        switch product.downloadableFiles.count {
+        case 1:
+            details = String.localizedStringWithFormat(Constants.singularDownloadsFormat, product.downloadableFiles.count)
+        case 2...:
+            details = String.localizedStringWithFormat(Constants.pluralDownloadsFormat, product.downloadableFiles.count)
+        default:
+            details = Constants.emptyDownloads
+        }
+
+        return ProductFormSection.SettingsRow.ViewModel(icon: icon,
+                                                        title: title,
+                                                        details: details)
     }
 }
 
@@ -507,5 +533,17 @@ private extension DefaultProductFormTableViewModel {
         static let noPriceWarningTitle =
             NSLocalizedString("Variations without price won’t be shown in your store",
                               comment: "Title of the no price warning row on Product Variation main screen when a variation is enabled without a price")
+
+        // Downloadable files
+        static let downloadsTitle =
+            NSLocalizedString("Downloadable files",
+                              comment: "Title of the Downloadable Files row on Product main screen")
+
+        static let emptyDownloads = NSLocalizedString("No files yet",
+                                                      comment: "Placeholder for empty Downloadable Files row on Product main screen")
+        static let singularDownloadsFormat = NSLocalizedString("%ld file",
+                                                               comment: "Format of the number of Downloadable Files row in the singular form. Reads, `1 file`")
+        static let pluralDownloadsFormat = NSLocalizedString("%ld files",
+                                                           comment: "Format of the number of Downloadable Files row in the plural form. Reads, `5 files`")
     }
 }

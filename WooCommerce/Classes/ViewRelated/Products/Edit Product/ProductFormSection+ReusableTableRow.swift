@@ -27,7 +27,7 @@ extension ProductFormSection.PrimaryFieldRow: ReusableTableRow {
         case .images:
             return [ProductImagesHeaderTableViewCell.self]
         case .name:
-            return [TextViewTableViewCell.self]
+            return [TextViewTableViewCell.self, BasicTableViewCell.self]
         case .variationName:
             return [cellType]
         case .description:
@@ -43,11 +43,11 @@ extension ProductFormSection.PrimaryFieldRow: ReusableTableRow {
         switch self {
         case .images:
             return ProductImagesHeaderTableViewCell.self
-        case .name:
-            return TextViewTableViewCell.self
+        case .name(_, let editable):
+            return editable ? TextViewTableViewCell.self: BasicTableViewCell.self
         case .variationName:
             return BasicTableViewCell.self
-        case .description(let description):
+        case .description(let description, _):
             return description?.isEmpty == false ? ImageAndTitleAndTextTableViewCell.self: BasicTableViewCell.self
         }
     }
@@ -67,6 +67,7 @@ extension ProductFormSection.SettingsRow: ReusableTableRow {
              .sku,
              .groupedProducts,
              .variations,
+             .downloadableFiles,
              .status,
              .noPriceWarning:
             return [ImageAndTitleAndTextTableViewCell.self]
@@ -92,6 +93,7 @@ extension ProductFormSection.SettingsRow: ReusableTableRow {
              .sku,
              .groupedProducts,
              .variations,
+             .downloadableFiles,
              .status,
              .noPriceWarning:
             return ImageAndTitleAndTextTableViewCell.self

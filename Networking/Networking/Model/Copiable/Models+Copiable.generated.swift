@@ -91,6 +91,7 @@ extension Product {
         name: CopiableProp<String> = .copy,
         slug: CopiableProp<String> = .copy,
         permalink: CopiableProp<String> = .copy,
+        date: CopiableProp<Date> = .copy,
         dateCreated: CopiableProp<Date> = .copy,
         dateModified: NullableCopiableProp<Date> = .copy,
         dateOnSaleStart: NullableCopiableProp<Date> = .copy,
@@ -100,7 +101,7 @@ extension Product {
         featured: CopiableProp<Bool> = .copy,
         catalogVisibilityKey: CopiableProp<String> = .copy,
         fullDescription: NullableCopiableProp<String> = .copy,
-        briefDescription: NullableCopiableProp<String> = .copy,
+        shortDescription: NullableCopiableProp<String> = .copy,
         sku: NullableCopiableProp<String> = .copy,
         price: CopiableProp<String> = .copy,
         regularPrice: NullableCopiableProp<String> = .copy,
@@ -153,6 +154,7 @@ extension Product {
         let name = name ?? self.name
         let slug = slug ?? self.slug
         let permalink = permalink ?? self.permalink
+        let date = date ?? self.date
         let dateCreated = dateCreated ?? self.dateCreated
         let dateModified = dateModified ?? self.dateModified
         let dateOnSaleStart = dateOnSaleStart ?? self.dateOnSaleStart
@@ -162,7 +164,7 @@ extension Product {
         let featured = featured ?? self.featured
         let catalogVisibilityKey = catalogVisibilityKey ?? self.catalogVisibilityKey
         let fullDescription = fullDescription ?? self.fullDescription
-        let briefDescription = briefDescription ?? self.briefDescription
+        let shortDescription = shortDescription ?? self.shortDescription
         let sku = sku ?? self.sku
         let price = price ?? self.price
         let regularPrice = regularPrice ?? self.regularPrice
@@ -216,6 +218,7 @@ extension Product {
             name: name,
             slug: slug,
             permalink: permalink,
+            date: date,
             dateCreated: dateCreated,
             dateModified: dateModified,
             dateOnSaleStart: dateOnSaleStart,
@@ -225,7 +228,7 @@ extension Product {
             featured: featured,
             catalogVisibilityKey: catalogVisibilityKey,
             fullDescription: fullDescription,
-            briefDescription: briefDescription,
+            shortDescription: shortDescription,
             sku: sku,
             price: price,
             regularPrice: regularPrice,

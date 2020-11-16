@@ -51,16 +51,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // As first thing, setup the crash logging
         setupCrashLogging()
 
-        // Setup the Interface!
-        setupMainWindow()
-        setupComponentsAppearance()
-
         // Setup Components
         setupAnalytics()
         setupAuthenticationManager()
         setupCocoaLumberjack()
         setupLogLevel(.verbose)
-        setupNoticePresenter()
         setupPushNotificationsManagerIfPossible()
         setupAppRatingManager()
         setupWormholy()
@@ -69,9 +64,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if #available(iOS 13.0, *) {
             appleIDCredentialChecker.observeLoggedInStateForAppleIDObservations()
         }
-
-        // Start app navigation.
-        appCoordinator?.start()
 
         // Components that require prior Auth
         setupZendesk()
@@ -86,6 +78,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+
+        // Setup the Interface!
+        setupMainWindow()
+        setupComponentsAppearance()
+        setupNoticePresenter()
+
+        // Start app navigation.
+        appCoordinator?.start()
+
         return true
     }
 

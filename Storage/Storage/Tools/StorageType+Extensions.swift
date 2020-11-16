@@ -52,7 +52,7 @@ public extension StorageType {
     /// Retrieves the Stored Order Item Tax.
     ///
     func loadOrderItemTax(itemID: Int64, taxID: Int64) -> OrderItemTax? {
-        let predicate = NSPredicate(format: "item.itemID = %ld AND taxID = %ld", taxID)
+        let predicate = NSPredicate(format: "item.itemID = %ld AND taxID = %ld", itemID, taxID)
         return firstObject(ofType: OrderItemTax.self, matching: predicate)
     }
 
@@ -75,6 +75,13 @@ public extension StorageType {
     func loadShippingLine(siteID: Int64, shippingID: Int64) -> ShippingLine? {
         let predicate = NSPredicate(format: "order.siteID = %ld AND shippingID = %ld", siteID, shippingID)
         return firstObject(ofType: ShippingLine.self, matching: predicate)
+    }
+
+    /// Retrieves the Stored Order Shipping Line Tax.
+    ///
+    func loadShippingLineTax(shippingID: Int64, taxID: Int64) -> ShippingLineTax? {
+        let predicate = NSPredicate(format: "shipping.shippingID = %ld AND taxID = %ld", shippingID, taxID)
+        return firstObject(ofType: ShippingLineTax.self, matching: predicate)
     }
 
     /// Retrieves the Stored Order Note.
@@ -386,6 +393,14 @@ public extension StorageType {
     }
 
     // MARK: - Refunds
+
+    /// Retrieves all of the stored Refund entities for the provided siteID and orderID.
+    ///
+    func loadRefunds(siteID: Int64, orderID: Int64) -> [Refund] {
+        let predicate = NSPredicate(format: "siteID = %ld AND orderID = %ld", siteID, orderID)
+        let descriptor = NSSortDescriptor(keyPath: \Refund.dateCreated, ascending: false)
+        return allObjects(ofType: Refund.self, matching: predicate, sortedBy: [descriptor])
+    }
 
     /// Retrieves a stored Refund for the provided siteID, orderID, and refundID.
     ///

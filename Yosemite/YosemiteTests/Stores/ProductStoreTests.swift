@@ -1420,6 +1420,7 @@ private extension ProductStoreTests {
                        name: "Book the Green Room",
                        slug: "book-the-green-room",
                        permalink: "https://example.com/product/book-the-green-room/",
+                       date: date(with: "2019-02-19T17:33:31"),
                        dateCreated: date(with: "2019-02-19T17:33:31"),
                        dateModified: date(with: "2019-02-19T17:48:01"),
                        dateOnSaleStart: date(with: "2019-10-15T21:30:00"),
@@ -1429,7 +1430,7 @@ private extension ProductStoreTests {
                        featured: false,
                        catalogVisibilityKey: "visible",
                        fullDescription: "<p>This is the party room!</p>\n",
-                       briefDescription: """
+                       shortDescription: """
                            [contact-form]\n<p>The green room&#8217;s max capacity is 30 people. Reserving the date / time of your event is free. \
                            We can also accommodate large groups, with seating for 85 board game players at a time. If you have a large group, let us \
                            know and we&#8217;ll send you our large group rate.</p>\n<p>GROUP RATES</p>\n<p>Reserve your event for up to 30 guests \
@@ -1572,6 +1573,7 @@ private extension ProductStoreTests {
                        name: "Book the Green Room",
                        slug: "book-the-green-room",
                        permalink: "https://example.com/product/book-the-green-room/",
+                       date: date(with: "2019-02-19T17:33:31"),
                        dateCreated: date(with: "2019-02-19T17:33:31"),
                        dateModified: date(with: "2019-02-19T17:48:01"),
                        dateOnSaleStart: date(with: "2019-10-15T21:30:00"),
@@ -1581,7 +1583,7 @@ private extension ProductStoreTests {
                        featured: false,
                        catalogVisibilityKey: "visible",
                        fullDescription: "<p>This is the party room!</p>\n",
-                       briefDescription: """
+                       shortDescription: """
                            [contact-form]\n<p>The green room&#8217;s max capacity is 30 people. Reserving the date / time of your event is free. \
                            We can also accommodate large groups, with seating for 85 board game players at a time. If you have a large group, let us \
                            know and we&#8217;ll send you our large group rate.</p>\n<p>GROUP RATES</p>\n<p>Reserve your event for up to 30 guests \
@@ -1704,6 +1706,7 @@ private extension ProductStoreTests {
                        name: "Paper Airplane - Black, Long",
                        slug: "paper-airplane-3",
                        permalink: "https://paperairplane.store/product/paper-airplane/?attribute_color=Black&attribute_length=Long",
+                       date: date(with: "2019-04-04T22:06:45"),
                        dateCreated: date(with: "2019-04-04T22:06:45"),
                        dateModified: date(with: "2019-04-09T20:24:03"),
                        dateOnSaleStart: nil,
@@ -1713,7 +1716,7 @@ private extension ProductStoreTests {
                        featured: false,
                        catalogVisibilityKey: "visible",
                        fullDescription: "<p>Long paper airplane. Color is black. </p>\n",
-                       briefDescription: "",
+                       shortDescription: "",
                        sku: "345345-2",
                        price: "22.72",
                        regularPrice: "22.72",

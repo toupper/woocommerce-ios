@@ -13,7 +13,25 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(shippingLines: [])
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
+
+        // Then
+        let rows = viewModel.sections.flatMap { $0.rows }
+        XCTAssertFalse(rows.isEmpty)
+        rows.forEach { viewModel in
+            XCTAssertFalse(viewModel is IssueRefundViewModel.ShippingSwitchViewModel)
+            XCTAssertFalse(viewModel is RefundShippingDetailsViewModel)
+        }
+    }
+
+    func test_viewModel_does_not_have_shipping_section_on_order_with_free_shipping() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let shippingLines = MockOrders.sampleShippingLines(cost: "0.0", tax: "0.0")
+        let order = MockOrders().makeOrder(shippingLines: shippingLines)
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // Then
         let rows = viewModel.sections.flatMap { $0.rows }
@@ -30,7 +48,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(shippingLines: MockOrders.sampleShippingLines())
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // Then
         let shippingSwitchRow = try XCTUnwrap(viewModel.sections[safe: 1]?.rows[safe: 0])
@@ -41,7 +59,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         // Given
         let currencySettings = CurrencySettings()
         let order = MockOrders().makeOrder(shippingLines: MockOrders.sampleShippingLines())
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
         XCTAssertNil(viewModel.sections[safe: 1]?.rows[safe: 1]) // No shipping details
 
         // When
@@ -63,7 +81,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // Then
         XCTAssertEqual(viewModel.quantityAvailableForRefundForItemAtIndex(0), 3)
@@ -83,7 +101,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // Then
         XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(0), 0)
@@ -103,7 +121,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
         viewModel.updateRefundQuantity(quantity: 2, forItemAtIndex: 1)
 
         // Then
@@ -124,7 +142,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
         viewModel.selectAllOrderItems()
 
         // Then
@@ -132,6 +150,29 @@ final class IssueRefundViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(1), 2)
         XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(2), 1)
         XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(3), nil)
+    }
+
+    func test_viewModel_updates_refund_quantities_after_selecting_all_while_having_previous_refunds() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, productID: 1, quantity: 3, price: 11.50),
+            MockOrderItem.sampleItem(itemID: 2, productID: 2, quantity: 2, price: 12.50),
+            MockOrderItem.sampleItem(itemID: 3, productID: 3, quantity: 1, price: 13.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let refund = MockRefunds.sampleRefund(items: [
+            MockRefunds.sampleRefundItem(productID: 1, quantity: -2),
+            MockRefunds.sampleRefundItem(productID: 2, quantity: -2),
+        ])
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [refund], currencySettings: currencySettings)
+        viewModel.selectAllOrderItems()
+
+        // Then
+        XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(0), 1) // Product 1
+        XCTAssertEqual(viewModel.currentQuantityForItemAtIndex(1), 1) // Product 3 is at index 1 because Product 2 was refunded
     }
 
     func test_viewModel_correctly_adds_item_selections_to_title() {
@@ -143,7 +184,7 @@ final class IssueRefundViewModelTests: XCTestCase {
             MockOrderItem.sampleItem(itemID: 3, quantity: 1, price: 13.50),
         ]
         let order = MockOrders().makeOrder(items: items)
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // When
         viewModel.updateRefundQuantity(quantity: 2, forItemAtIndex: 0)
@@ -166,7 +207,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         ]
         let shippingLines = MockOrders.sampleShippingLines(cost: "7.00", tax: "0.62")
         let order = MockOrders().makeOrder(items: items, shippingLines: shippingLines)
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // 11.50 (item 1) x 2 (quantity) = 23.0
         viewModel.updateRefundQuantity(quantity: 2, forItemAtIndex: 0)
@@ -191,7 +232,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
 
         // Then
         let selectedItemsTitle = String(format: NSLocalizedString("%d items selected", comment: ""), 0)
@@ -209,7 +250,7 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
         viewModel.updateRefundQuantity(quantity: 1, forItemAtIndex: 2)
 
         // Then
@@ -228,11 +269,125 @@ final class IssueRefundViewModelTests: XCTestCase {
         let order = MockOrders().makeOrder(items: items)
 
         // When
-        let viewModel = IssueRefundViewModel(order: order, currencySettings: currencySettings)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
         viewModel.selectAllOrderItems()
 
         // Then
         let selectedItemsTitle = String(format: NSLocalizedString("%d items selected", comment: ""), 6)
         XCTAssertEqual(viewModel.selectedItemsTitle, selectedItemsTitle)
+    }
+
+    func test_viewModel_correctly_reduces_refunded_items() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, productID: 1, quantity: 3, price: 11.50),
+            MockOrderItem.sampleItem(itemID: 2, productID: 2, quantity: 2, price: 12.50),
+            MockOrderItem.sampleItem(itemID: 3, productID: 3, quantity: 1, price: 13.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let refund = MockRefunds.sampleRefund(items: [
+            MockRefunds.sampleRefundItem(productID: 1, quantity: -2),
+            MockRefunds.sampleRefundItem(productID: 2, quantity: -1),
+        ])
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [refund], currencySettings: currencySettings)
+
+        // Then
+        XCTAssertEqual(viewModel.quantityAvailableForRefundForItemAtIndex(0), 1)
+        XCTAssertEqual(viewModel.quantityAvailableForRefundForItemAtIndex(1), 1)
+        XCTAssertEqual(viewModel.quantityAvailableForRefundForItemAtIndex(2), 1)
+    }
+
+    func test_viewModel_correctly_filters_items_already_refunded() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, productID: 1, quantity: 3, price: 11.50),
+            MockOrderItem.sampleItem(itemID: 2, productID: 2, quantity: 2, price: 12.50),
+            MockOrderItem.sampleItem(itemID: 3, productID: 3, quantity: 1, price: 13.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let refund = MockRefunds.sampleRefund(items: [
+            MockRefunds.sampleRefundItem(productID: 1, quantity: -3),
+            MockRefunds.sampleRefundItem(productID: 2, quantity: -2),
+        ])
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [refund], currencySettings: currencySettings)
+
+        // Then
+        let itemRows = viewModel.sections[0].rows
+        XCTAssertEqual(itemRows.count, 2) // One item left + summary row
+        XCTAssertEqual(viewModel.quantityAvailableForRefundForItemAtIndex(0), 1)
+    }
+
+    func test_viewModel_total_is_correctly_calculated_while_having_previous_refunds() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, productID: 1, quantity: 3, price: 11.50, totalTax: "2.97"),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let refund = MockRefunds.sampleRefund(items: [
+            MockRefunds.sampleRefundItem(productID: 1, quantity: -1),
+        ])
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [refund], currencySettings: currencySettings)
+        viewModel.updateRefundQuantity(quantity: 1, forItemAtIndex: 0)
+
+        // Then
+        // Price is 11.50 and tax is 0.99 (2.97 / 3(quantity))
+        XCTAssertEqual(viewModel.title, "$12.49")
+    }
+
+    func test_viewModel_starts_with_next_button_disabled() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, quantity: 3, price: 11.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+
+        // When
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
+
+        // Then
+        XCTAssertFalse(viewModel.isNextButtonEnabled)
+    }
+
+    func test_viewModel_next_button_gets_enabled_after_selecting_items() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, quantity: 3, price: 11.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
+
+        // When
+        viewModel.selectAllOrderItems()
+
+        // Then
+        XCTAssertTrue(viewModel.isNextButtonEnabled)
+    }
+
+    func test_viewModel_next_button_gets_disabled_after_selecting_and_then_unselecting_items() {
+        // Given
+        let currencySettings = CurrencySettings()
+        let items = [
+            MockOrderItem.sampleItem(itemID: 1, quantity: 3, price: 11.50),
+        ]
+        let order = MockOrders().makeOrder(items: items)
+        let viewModel = IssueRefundViewModel(order: order, refunds: [], currencySettings: currencySettings)
+        viewModel.selectAllOrderItems()
+
+        // When
+        viewModel.updateRefundQuantity(quantity: 0, forItemAtIndex: 0)
+
+        // Then
+        XCTAssertFalse(viewModel.isNextButtonEnabled)
     }
 }

@@ -10,6 +10,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
     public let slug: String
     public let permalink: String
 
+    public let date: Date               // Calculated date based on `dateCreated`, `dateModified`, and `statusKey`
     public let dateCreated: Date        // gmt
     public let dateModified: Date?      // gmt
     public let dateOnSaleStart: Date?   // gmt
@@ -21,7 +22,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
     public let catalogVisibilityKey: String // visible, catalog, search, hidden
 
     public let fullDescription: String?
-    public let briefDescription: String?
+    public let shortDescription: String?
     public let sku: String?
 
     public let price: String
@@ -115,6 +116,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
                 name: String,
                 slug: String,
                 permalink: String,
+                date: Date,
                 dateCreated: Date,
                 dateModified: Date?,
                 dateOnSaleStart: Date?,
@@ -124,7 +126,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
                 featured: Bool,
                 catalogVisibilityKey: String,
                 fullDescription: String?,
-                briefDescription: String?,
+                shortDescription: String?,
                 sku: String?,
                 price: String,
                 regularPrice: String?,
@@ -176,6 +178,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
         self.name = name
         self.slug = slug
         self.permalink = permalink
+        self.date = date
         self.dateCreated = dateCreated
         self.dateModified = dateModified
         self.dateOnSaleStart = dateOnSaleStart
@@ -185,7 +188,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
         self.featured = featured
         self.catalogVisibilityKey = catalogVisibilityKey
         self.fullDescription = fullDescription
-        self.briefDescription = briefDescription
+        self.shortDescription = shortDescription
         self.sku = sku
         self.price = price
         self.regularPrice = regularPrice
@@ -258,8 +261,11 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
         let featured = try container.decode(Bool.self, forKey: .featured)
         let catalogVisibilityKey = try container.decode(String.self, forKey: .catalogVisibilityKey)
 
+        // Calculated date: `dateModified` for a draft product and `dateCreated` otherwise.
+        let date = statusKey == ProductStatus.draft.rawValue ? dateModified: dateCreated
+
         let fullDescription = try container.decodeIfPresent(String.self, forKey: .fullDescription)
-        let briefDescription = try container.decodeIfPresent(String.self, forKey: .briefDescription)
+        let shortDescription = try container.decodeIfPresent(String.self, forKey: .shortDescription)
         let sku = try container.decodeIfPresent(String.self, forKey: .sku)
 
         // Even though a plain install of WooCommerce Core provides string values,
@@ -354,6 +360,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
                   name: name,
                   slug: slug,
                   permalink: permalink,
+                  date: date,
                   dateCreated: dateCreated,
                   dateModified: dateModified,
                   dateOnSaleStart: dateOnSaleStart,
@@ -363,7 +370,7 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
                   featured: featured,
                   catalogVisibilityKey: catalogVisibilityKey,
                   fullDescription: fullDescription,
-                  briefDescription: briefDescription,
+                  shortDescription: shortDescription,
                   sku: sku,
                   price: price,
                   regularPrice: regularPrice,
@@ -473,8 +480,8 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
         // Tags
         try container.encode(tags, forKey: .tags)
 
-        // Brief description (short description).
-        try container.encode(briefDescription, forKey: .briefDescription)
+        // Short description.
+        try container.encode(shortDescription, forKey: .shortDescription)
 
         // Grouped products.
         try container.encode(groupedProducts, forKey: .groupedProducts)
@@ -522,7 +529,7 @@ private extension Product {
         case catalogVisibilityKey   = "catalog_visibility"
 
         case fullDescription        = "description"
-        case briefDescription       = "short_description"
+        case shortDescription       = "short_description"
 
         case sku            = "sku"
         case price          = "price"

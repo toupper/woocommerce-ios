@@ -33,9 +33,9 @@ extension UIImage {
         return UIImage.gridicon(.bell)
     }
 
-    /// Brief Description Icon
+    /// Short Description Icon
     ///
-    static var briefDescriptionImage: UIImage {
+    static var shortDescriptionImage: UIImage {
         return UIImage.gridicon(.alignLeft, size: CGSize(width: 24, height: 24)).imageFlippedForRightToLeftLayoutDirection()
     }
 
@@ -397,6 +397,12 @@ extension UIImage {
     ///
     static var scanImage: UIImage {
         return UIImage(named: "icon-scan")!
+    }
+
+    /// WordPress Logo Icon
+    ///
+    static var wordPressLogoImage: UIImage {
+        return UIImage.gridicon(.mySites)
     }
 
     /// Returns a star icon with the given size

@@ -26,6 +26,7 @@ extension Storage.Product: ReadOnlyConvertible {
         name = product.name
         slug = product.slug
         permalink = product.permalink
+        date = product.date
         dateCreated = product.dateCreated
         dateModified = product.dateModified
         dateOnSaleStart = product.dateOnSaleStart
@@ -34,7 +35,7 @@ extension Storage.Product: ReadOnlyConvertible {
         featured = product.featured
         catalogVisibilityKey = product.catalogVisibilityKey
         fullDescription = product.fullDescription
-        briefDescription = product.briefDescription
+        briefDescription = product.shortDescription
         sku = product.sku
         price = product.price
         regularPrice = product.regularPrice
@@ -103,6 +104,7 @@ extension Storage.Product: ReadOnlyConvertible {
                        name: name,
                        slug: slug,
                        permalink: permalink,
+                       date: date,
                        dateCreated: dateCreated,
                        dateModified: dateModified,
                        dateOnSaleStart: dateOnSaleStart,
@@ -112,7 +114,7 @@ extension Storage.Product: ReadOnlyConvertible {
                        featured: featured,
                        catalogVisibilityKey: catalogVisibilityKey,
                        fullDescription: fullDescription,
-                       briefDescription: briefDescription,
+                       shortDescription: briefDescription,
                        sku: sku,
                        price: price,
                        regularPrice: regularPrice,

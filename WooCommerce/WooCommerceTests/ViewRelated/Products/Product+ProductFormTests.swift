@@ -15,11 +15,11 @@ class Product_ProductFormTests: XCTestCase {
         XCTAssertEqual(model.trimmedFullDescription, expectedDescription)
     }
 
-    func testTrimmedBriefDescriptionWithLeadingNewLinesAndHTMLTags() {
+    func testTrimmedShortDescriptionWithLeadingNewLinesAndHTMLTags() {
         let description = "\n\n\n  <p>This is the party room!</p>\n"
-        let product = sampleProduct(briefDescription: description)
+        let product = sampleProduct(shortDescription: description)
         let expectedDescription = "This is the party room!"
-        XCTAssertEqual(product.trimmedBriefDescription, expectedDescription)
+        XCTAssertEqual(product.trimmedShortDescription, expectedDescription)
     }
 
     func testNoCategoryDescriptionOutputsNilDescription() {
@@ -34,7 +34,7 @@ class Product_ProductFormTests: XCTestCase {
         XCTAssertEqual(product.categoriesDescription(), expectedDescription)
     }
 
-    func testMutipleCategoriesDescriptionOutputsFormattedList() {
+    func testMultipleCategoriesDescriptionOutputsFormattedList() {
         let categories = ["Pants", "Dress", "Shoes"].map { sampleCategory(name: $0) }
         let product = sampleProduct(categories: categories)
         let expectedDescription: String = {
@@ -98,12 +98,13 @@ private extension Product_ProductFormTests {
                                slug: "")
     }
 
-    func sampleProduct(description: String? = "", briefDescription: String? = "", categories: [ProductCategory] = []) -> Product {
+    func sampleProduct(description: String? = "", shortDescription: String? = "", categories: [ProductCategory] = []) -> Product {
         return Product(siteID: sampleSiteID,
                        productID: 177,
                        name: "Book the Green Room",
                        slug: "book-the-green-room",
                        permalink: "https://example.com/product/book-the-green-room/",
+                       date: Date(),
                        dateCreated: Date(),
                        dateModified: Date(),
                        dateOnSaleStart: date(with: "2019-10-15T21:30:00"),
@@ -113,7 +114,7 @@ private extension Product_ProductFormTests {
                        featured: false,
                        catalogVisibilityKey: "visible",
                        fullDescription: description,
-                       briefDescription: briefDescription,
+                       shortDescription: shortDescription,
                        sku: "",
                        price: "0",
                        regularPrice: "",

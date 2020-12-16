@@ -11,9 +11,6 @@ final class OrderDetailsDataSource: NSObject {
     /// This is only used to pass as a dependency to `OrderDetailsResultsControllers`.
     private let storageManager: StorageManagerType
 
-    /// Used while the `issueRefunds` feature is under development
-    private let isIssueRefundsEnabled: Bool
-
     private(set) var order: Order
     private let couponLines: [OrderCouponLine]?
 
@@ -44,6 +41,10 @@ final class OrderDetailsDataSource: NSObject {
     /// Closure to be executed when the cell was tapped.
     ///
     var onCellAction: ((CellActionType, IndexPath?) -> Void)?
+
+    /// Closure to be executed when the shipping label more menu is tapped.
+    ///
+    var onShippingLabelMoreMenuTapped: ((_ shippingLabel: ShippingLabel, _ sourceView: UIView) -> Void)?
 
     /// Closure to be executed when the UI needs to be reloaded.
     ///
@@ -78,6 +79,9 @@ final class OrderDetailsDataSource: NSObject {
     var refunds: [Refund] {
         return resultsControllers.refunds
     }
+
+    private var shippingLabels: [ShippingLabel] = []
+    private var shippingLabelOrderItemsAggregator: AggregatedShippingLabelOrderItems = AggregatedShippingLabelOrderItems.empty
 
     /// Shipping Lines from an Order
     ///
@@ -145,12 +149,10 @@ final class OrderDetailsDataSource: NSObject {
     private let imageService: ImageService = ServiceLocator.imageService
 
     init(order: Order,
-         storageManager: StorageManagerType = ServiceLocator.storageManager,
-         isIssueRefundsEnabled: Bool = ServiceLocator.featureFlagService.isFeatureFlagEnabled(.issueRefunds)) {
+         storageManager: StorageManagerType = ServiceLocator.storageManager) {
         self.storageManager = storageManager
         self.order = order
         self.couponLines = order.coupons
-        self.isIssueRefundsEnabled = isIssueRefundsEnabled
 
         super.init()
     }
@@ -161,6 +163,13 @@ final class OrderDetailsDataSource: NSObject {
 
     func configureResultsControllers(onReload: @escaping () -> Void) {
         resultsControllers.configureResultsControllers(onReload: onReload)
+    }
+
+    func shippingLabelOrderItem(at indexPath: IndexPath) -> AggregateOrderItem? {
+        guard let shippingLabel = shippingLabel(at: indexPath) else {
+            return nil
+        }
+        return shippingLabelOrderItemsAggregator.orderItem(of: shippingLabel, at: indexPath.row)
     }
 }
 
@@ -199,7 +208,12 @@ extension OrderDetailsDataSource {
 
         switch headerView {
         case let headerView as PrimarySectionHeaderView:
-            headerView.configure(title: section.title)
+            switch section.headerStyle {
+            case .actionablePrimary(let actionConfig):
+                headerView.configure(title: section.title, action: actionConfig)
+            default:
+                headerView.configure(title: section.title)
+            }
         case let headerView as TwoColumnSectionHeaderView:
             headerView.leftText = section.title
             headerView.rightText = section.rightTitle
@@ -227,6 +241,8 @@ private extension OrderDetailsDataSource {
             configureShippingMethod(cell: cell)
         case let cell as WooBasicTableViewCell where row == .billingDetail:
             configureBillingDetail(cell: cell)
+        case let cell as WooBasicTableViewCell where row == .shippingLabelDetail:
+            configureShippingLabelDetail(cell: cell)
         case let cell as TopLeftImageTableViewCell where row == .shippingNotice:
             configureShippingNotice(cell: cell)
         case let cell as LeftImageTableViewCell where row == .addOrderNote:
@@ -245,12 +261,18 @@ private extension OrderDetailsDataSource {
             configureNetAmount(cell: cell)
         case let cell as ProductDetailsTableViewCell where row == .orderItem:
             configureOrderItem(cell: cell, at: indexPath)
+        case let cell as ProductDetailsTableViewCell where row == .shippingLabelProduct:
+            configureShippingLabelProduct(cell: cell, at: indexPath)
         case let cell as ProductDetailsTableViewCell where row == .aggregateOrderItem:
             configureAggregateOrderItem(cell: cell, at: indexPath)
-        case let cell as ButtonTableViewCell:
+        case let cell as ButtonTableViewCell where row == .fulfillButton:
             configureFulfillmentButton(cell: cell)
-        case let cell as OrderTrackingTableViewCell:
+        case let cell as ButtonTableViewCell where row == .shippingLabelReprintButton:
+            configureReprintShippingLabelButton(cell: cell)
+        case let cell as OrderTrackingTableViewCell where row == .tracking:
             configureTracking(cell: cell, at: indexPath)
+        case let cell as OrderTrackingTableViewCell where row == .shippingLabelTrackingNumber:
+            configureShippingLabelTrackingNumber(cell: cell, at: indexPath)
         case let cell as LeftImageTableViewCell where row == .trackingAdd:
             configureNewTracking(cell: cell)
         case let cell as SummaryTableViewCell:
@@ -408,6 +430,61 @@ private extension OrderDetailsDataSource {
         cell.configure(item: itemViewModel, imageService: imageService)
     }
 
+    private func configureShippingLabelDetail(cell: WooBasicTableViewCell) {
+        cell.bodyLabel?.text = Footer.showShippingLabelDetails
+        cell.applyPlainTextStyle()
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+
+        cell.accessibilityTraits = .button
+        cell.accessibilityLabel = NSLocalizedString(
+            "View Shipment Details",
+            comment: "Accessibility label for the 'View Shipment Details' button"
+        )
+
+        cell.accessibilityHint = NSLocalizedString(
+            "Show the shipment details for this shipping label.",
+            comment: "VoiceOver accessibility hint, informing the user that the button can be used to view shipping label shipment details."
+        )
+    }
+
+    private func configureShippingLabelProduct(cell: ProductDetailsTableViewCell, at indexPath: IndexPath) {
+        cell.selectionStyle = .default
+
+        guard let shippingLabel = shippingLabel(at: indexPath),
+              let orderItem = shippingLabelOrderItemsAggregator.orderItem(of: shippingLabel, at: indexPath.row) else {
+            assertionFailure("Cannot access shipping label and/or order item at \(indexPath)")
+            return
+        }
+
+        let itemViewModel = ProductDetailsCellViewModel(aggregateItem: orderItem, currency: order.currency)
+        cell.configure(item: itemViewModel, imageService: imageService)
+    }
+
+    private func configureShippingLabelTrackingNumber(cell: OrderTrackingTableViewCell, at indexPath: IndexPath) {
+        guard let shippingLabel = shippingLabel(at: indexPath) else {
+            return
+        }
+
+        cell.topText = shippingLabel.serviceName
+
+        // TODO-2167: update design for shipping label tracking number
+    }
+
+    private func configureReprintShippingLabelButton(cell: ButtonTableViewCell) {
+        cell.configure(style: .secondary, title: Titles.reprintShippingLabel) {
+            // TODO-2174: reprint shipping label UX
+        }
+    }
+
+    private func shippingLabel(at indexPath: IndexPath) -> ShippingLabel? {
+        guard let firstShippingLabelSectionIndex = sections.firstIndex(where: { $0.category == .shippingLabel }) else {
+            return nil
+        }
+        let shippingLabelIndex = indexPath.section - firstShippingLabelSectionIndex
+        return shippingLabels[shippingLabelIndex]
+    }
+
     private func configureAggregateOrderItem(cell: ProductDetailsTableViewCell, at indexPath: IndexPath) {
         cell.selectionStyle = .default
 
@@ -563,7 +640,14 @@ extension OrderDetailsDataSource {
     /// When: Shipping == nil               >>> Display: Shipping = "No address specified"
     ///
     func reloadSections() {
-        let summary = Section(row: .summary)
+        // Freezes any data that require lookup after the sections are reloaded, in case the data from a ResultsController changes before the next reload.
+        shippingLabels = resultsControllers.shippingLabels
+        shippingLabelOrderItemsAggregator = AggregatedShippingLabelOrderItems(shippingLabels: shippingLabels,
+                                                                                   orderItems: items,
+                                                                                   products: products,
+                                                                                   productVariations: resultsControllers.productVariations)
+
+        let summary = Section(category: .summary, row: .summary)
 
         let shippingNotice: Section? = {
             // Hide the shipping method warning if order contains only virtual products
@@ -572,7 +656,7 @@ extension OrderDetailsDataSource {
                 return nil
             }
 
-            return Section(title: nil, rightTitle: nil, footer: nil, rows: [.shippingNotice])
+            return Section(category: .shippingNotice, title: nil, rightTitle: nil, footer: nil, rows: [.shippingNotice])
         }()
 
         let products: Section? = {
@@ -598,7 +682,7 @@ extension OrderDetailsDataSource {
                 return nil
             }
 
-            return Section(title: Localization.pluralizedProducts(count: items.count), rightTitle: nil, rows: rows, headerStyle: .primary)
+            return Section(category: .products, title: Localization.pluralizedProducts(count: items.count), rightTitle: nil, rows: rows, headerStyle: .primary)
         }()
 
         let refundedProducts: Section? = {
@@ -609,7 +693,39 @@ extension OrderDetailsDataSource {
 
             let row: Row = .refundedProducts
 
-            return Section(title: Title.refundedProducts, row: row)
+            return Section(category: .refundedProducts, title: Title.refundedProducts, row: row)
+        }()
+
+        let shippingLabelSections: [Section] = {
+            guard ServiceLocator.featureFlagService.isFeatureFlagEnabled(.shippingLabelsRelease1) else {
+                return []
+            }
+
+            guard shippingLabels.isNotEmpty else {
+                return []
+            }
+
+            let sections = shippingLabels.enumerated().map { index, shippingLabel -> Section in
+                let title = String.localizedStringWithFormat(Title.shippingLabelPackageFormat, index + 1)
+                let isRefunded = shippingLabel.refund != nil
+                let rows: [Row]
+                let headerStyle: Section.HeaderStyle
+                if isRefunded {
+                    rows = [.shippingLabelTrackingNumber, .shippingLabelDetail]
+                    headerStyle = .primary
+                } else {
+                    // TODO-2167: show printing instructions
+                    let orderItemsCount = shippingLabelOrderItemsAggregator.orderItems(of: shippingLabel).count
+                    rows = Array(repeating: .shippingLabelProduct, count: orderItemsCount)
+                        + [.shippingLabelReprintButton, .shippingLabelTrackingNumber, .shippingLabelDetail]
+                    let headerActionConfig = PrimarySectionHeaderView.ActionConfiguration(image: .moreImage) { [weak self] sourceView in
+                        self?.onShippingLabelMoreMenuTapped?(shippingLabel, sourceView)
+                    }
+                    headerStyle = .actionablePrimary(actionConfig: headerActionConfig)
+                }
+                return Section(category: .shippingLabel, title: title, rows: rows, headerStyle: headerStyle)
+            }
+            return sections
         }()
 
         let customerInformation: Section = {
@@ -631,7 +747,7 @@ extension OrderDetailsDataSource {
             }
             rows.append(.billingDetail)
 
-            return Section(title: Title.information, rows: rows)
+            return Section(category: .customerInformation, title: Title.information, rows: rows)
         }()
 
         let payment: Section = {
@@ -642,11 +758,11 @@ extension OrderDetailsDataSource {
                 rows.append(.netAmount)
             }
 
-            if isIssueRefundsEnabled && !isRefundedStatus {
+            if !isRefundedStatus {
                 rows.append(.issueRefundButton)
             }
 
-            return Section(title: Title.payment, rows: rows)
+            return Section(category: .payment, title: Title.payment, rows: rows)
         }()
 
         let tracking: Section? = {
@@ -655,7 +771,7 @@ extension OrderDetailsDataSource {
             }
 
             let rows: [Row] = Array(repeating: .tracking, count: orderTracking.count)
-            return Section(title: Title.tracking, rows: rows)
+            return Section(category: .tracking, title: Title.tracking, rows: rows)
         }()
 
         let addTracking: Section? = {
@@ -668,23 +784,24 @@ extension OrderDetailsDataSource {
             let title = orderTracking.count == 0 ? NSLocalizedString("Optional Tracking Information", comment: "") : nil
             let row = Row.trackingAdd
 
-            return Section(title: title, rightTitle: nil, rows: [row])
+            return Section(category: .addTracking, title: title, rightTitle: nil, rows: [row])
         }()
 
         let notes: Section = {
             let rows = [.addOrderNote] + orderNotesSections.map {$0.row}
-            return Section(title: Title.notes, rows: rows)
+            return Section(category: .notes, title: Title.notes, rows: rows)
         }()
 
-        sections = [summary,
+        sections = ([summary,
                     shippingNotice,
-                    products,
-                    refundedProducts,
+                    products] +
+                    shippingLabelSections +
+                    [refundedProducts,
                     payment,
                     customerInformation,
                     tracking,
                     addTracking,
-                    notes].compactMap { $0 }
+                    notes]).compactMap { $0 }
 
         updateOrderNoteAsyncDictionary(orderNotes: orderNotes)
     }
@@ -848,6 +965,7 @@ extension OrderDetailsDataSource {
         static let refunded = NSLocalizedString("Refunded",
                                                 comment: "The title for the refunded amount cell")
         static let netAmount = NSLocalizedString("Net", comment: "The title for the net amount paid cell")
+        static let reprintShippingLabel = NSLocalizedString("Reprint Shipping Label", comment: "Text on the button that reprints a shipping label")
     }
 
     enum Icons {
@@ -864,19 +982,39 @@ extension OrderDetailsDataSource {
         static let information = NSLocalizedString("Customer", comment: "Customer info section title")
         static let payment = NSLocalizedString("Payment", comment: "Payment section title")
         static let notes = NSLocalizedString("Order Notes", comment: "Order notes section title")
+        static let shippingLabelPackageFormat =
+            NSLocalizedString("Package %d",
+                              comment: "Order shipping label package section title format. The number indicates the index of the shipping label package.")
     }
 
     enum Footer {
         static let showBilling = NSLocalizedString("View Billing Information",
                                                    comment: "Button on bottom of Customer's information to show the billing details")
+        static let showShippingLabelDetails = NSLocalizedString("View Shipment Details",
+                                                                comment: "Button on bottom of shipping label package card to show shipping details")
     }
 
     struct Section {
+        enum Category {
+            case summary
+            case shippingNotice
+            case products
+            case shippingLabel
+            case refundedProducts
+            case payment
+            case customerInformation
+            case tracking
+            case addTracking
+            case notes
+        }
+
         /// The table header style of a `Section`.
         ///
         enum HeaderStyle {
             /// Uses the PrimarySectionHeaderView
             case primary
+            /// Uses the PrimarySectionHeaderView with action configuration
+            case actionablePrimary(actionConfig: PrimarySectionHeaderView.ActionConfiguration)
             /// Uses the TwoColumnSectionHeaderView
             case twoColumn
 
@@ -884,7 +1022,7 @@ extension OrderDetailsDataSource {
             ///
             var viewType: UITableViewHeaderFooterView.Type {
                 switch self {
-                case .primary:
+                case .primary, .actionablePrimary:
                     return PrimarySectionHeaderView.self
                 case .twoColumn:
                     return TwoColumnSectionHeaderView.self
@@ -892,17 +1030,20 @@ extension OrderDetailsDataSource {
             }
         }
 
+        let category: Category
         let title: String?
         let rightTitle: String?
         let footer: String?
         let rows: [Row]
         let headerStyle: HeaderStyle
 
-        init(title: String? = nil,
+        init(category: Category,
+             title: String? = nil,
              rightTitle: String? = nil,
              footer: String? = nil,
              rows: [Row],
              headerStyle: HeaderStyle = .twoColumn) {
+            self.category = category
             self.title = title
             self.rightTitle = rightTitle
             self.footer = footer
@@ -910,12 +1051,13 @@ extension OrderDetailsDataSource {
             self.headerStyle = headerStyle
         }
 
-        init(title: String? = nil,
+        init(category: Category,
+             title: String? = nil,
              rightTitle: String? = nil,
              footer: String? = nil,
              row: Row,
              headerStyle: HeaderStyle = .twoColumn) {
-            self.init(title: title, rightTitle: rightTitle, footer: footer, rows: [row], headerStyle: headerStyle)
+            self.init(category: category, title: title, rightTitle: rightTitle, footer: footer, rows: [row], headerStyle: headerStyle)
         }
     }
 
@@ -951,6 +1093,10 @@ extension OrderDetailsDataSource {
         case netAmount
         case tracking
         case trackingAdd
+        case shippingLabelDetail
+        case shippingLabelProduct
+        case shippingLabelReprintButton
+        case shippingLabelTrackingNumber
         case shippingNotice
         case addOrderNote
         case orderNoteHeader
@@ -992,6 +1138,14 @@ extension OrderDetailsDataSource {
                 return OrderTrackingTableViewCell.reuseIdentifier
             case .trackingAdd:
                 return LeftImageTableViewCell.reuseIdentifier
+            case .shippingLabelDetail:
+                return WooBasicTableViewCell.reuseIdentifier
+            case .shippingLabelProduct:
+                return ProductDetailsTableViewCell.reuseIdentifier
+            case .shippingLabelTrackingNumber:
+                return OrderTrackingTableViewCell.reuseIdentifier
+            case .shippingLabelReprintButton:
+                return ButtonTableViewCell.reuseIdentifier
             case .shippingNotice:
                 return TopLeftImageTableViewCell.reuseIdentifier
             case .addOrderNote:

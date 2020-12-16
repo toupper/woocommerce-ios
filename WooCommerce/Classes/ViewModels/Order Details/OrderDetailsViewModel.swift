@@ -116,6 +116,14 @@ final class OrderDetailsViewModel {
         }
     }
 
+    /// Closure to be executed when the shipping label more menu is tapped.
+    ///
+    var onShippingLabelMoreMenuTapped: ((_ shippingLabel: ShippingLabel, _ sourceView: UIView) -> Void)? {
+        didSet {
+            dataSource.onShippingLabelMoreMenuTapped = onShippingLabelMoreMenuTapped
+        }
+    }
+
     /// Helpers
     ///
     func lookUpOrderStatus(for order: Order) -> OrderStatus? {
@@ -225,6 +233,15 @@ extension OrderDetailsViewModel {
             viewController.present(navController, animated: true, completion: nil)
         case .aggregateOrderItem:
             let item = dataSource.aggregateOrderItems[indexPath.row]
+            let loaderViewController = ProductLoaderViewController(model: .init(aggregateOrderItem: item),
+                                                                   siteID: order.siteID,
+                                                                   forceReadOnly: true)
+            let navController = WooNavigationController(rootViewController: loaderViewController)
+            viewController.present(navController, animated: true, completion: nil)
+        case .shippingLabelProduct:
+            guard let item = dataSource.shippingLabelOrderItem(at: indexPath), item.productOrVariationID > 0 else {
+                return
+            }
             let loaderViewController = ProductLoaderViewController(model: .init(aggregateOrderItem: item),
                                                                    siteID: order.siteID,
                                                                    forceReadOnly: true)
@@ -343,6 +360,19 @@ extension OrderDetailsViewModel {
             onCompletion?(nil)
         }
 
+        ServiceLocator.stores.dispatch(action)
+    }
+
+    func syncShippingLabels(onCompletion: ((Error?) -> ())? = nil) {
+        let action = ShippingLabelAction.synchronizeShippingLabels(siteID: order.siteID, orderID: order.orderID) { result in
+            switch result {
+            case .success:
+                onCompletion?(nil)
+            case .failure(let error):
+                DDLogError("⛔️ Error synchronizing shipping labels: \(error)")
+                onCompletion?(error)
+            }
+        }
         ServiceLocator.stores.dispatch(action)
     }
 

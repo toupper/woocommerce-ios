@@ -130,7 +130,7 @@ class AuthenticationManager: Authentication {
         }
 
         if WordPressAuthenticator.shared.isWordPressAuthUrl(url) {
-            return WordPressAuthenticator.shared.handleWordPressAuthUrl(url, allowWordPressComAuth: true, rootViewController: rootViewController)
+            return WordPressAuthenticator.shared.handleWordPressAuthUrl(url, rootViewController: rootViewController)
         }
 
         return false
@@ -289,7 +289,8 @@ extension AuthenticationManager: WordPressAuthenticatorDelegate {
     ///
     func sync(credentials: AuthenticatorCredentials, onCompletion: @escaping () -> Void) {
         guard let wpcom = credentials.wpcom else {
-            fatalError("Self Hosted sites are not supported. Please review the Authenticator settings!")
+            DDLogWarn("⚠️ Attempt to sync an account without valid wp.com credentials")
+            return
         }
 
         // If Apple ID is previously set, saves it to Keychain now that authentication is complete.
@@ -310,6 +311,20 @@ extension AuthenticationManager: WordPressAuthenticatorDelegate {
             }
         }
         ServiceLocator.stores.dispatch(action)
+    }
+
+    func shouldNavigate(credentials: AuthenticatorCredentials) -> Bool {
+        return credentials.wpcom == nil && credentials.wporg != nil
+    }
+
+    func navigate(credentials: AuthenticatorCredentials) -> NavigationCommand? {
+        guard let wpOrg = credentials.wporg,
+              let email = wpOrg.jetPackEmail else {
+            DDLogWarn("⚠️ Was requested to navigate with WPCOM credentials")
+            return nil
+        }
+
+        return NavigateToMagicLink(email: email)
     }
 
     /// Tracks a given Analytics Event.

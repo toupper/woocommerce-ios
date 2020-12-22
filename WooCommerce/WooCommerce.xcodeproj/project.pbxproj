@@ -1001,6 +1001,7 @@
 		D8C2A28F231BD00500F503E9 /* ReviewsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C2A28E231BD00500F503E9 /* ReviewsViewModel.swift */; };
 		D8C2A291231BD0FD00F503E9 /* DefaultReviewsDataSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C2A290231BD0FD00F503E9 /* DefaultReviewsDataSource.swift */; };
 		D8C62471227AE0030011A7D6 /* SiteCountry.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C62470227AE0030011A7D6 /* SiteCountry.swift */; };
+		D8CD07FF25919BBC00B52D63 /* WordPressOrgCredentials+Woo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CD07FE25919BBC00B52D63 /* WordPressOrgCredentials+Woo.swift */; };
 		D8CD710F237A49DB007148B9 /* UIColor+SemanticColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CD710E237A49DB007148B9 /* UIColor+SemanticColors.swift */; };
 		D8D15F83230A17A000D48B3F /* ServiceLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8D15F82230A17A000D48B3F /* ServiceLocator.swift */; };
 		D8D15F85230A18AB00D48B3F /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8D15F84230A18AB00D48B3F /* Analytics.swift */; };
@@ -2091,6 +2092,7 @@
 		D8C2A28E231BD00500F503E9 /* ReviewsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewsViewModel.swift; sourceTree = "<group>"; };
 		D8C2A290231BD0FD00F503E9 /* DefaultReviewsDataSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultReviewsDataSource.swift; sourceTree = "<group>"; };
 		D8C62470227AE0030011A7D6 /* SiteCountry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteCountry.swift; sourceTree = "<group>"; };
+		D8CD07FE25919BBC00B52D63 /* WordPressOrgCredentials+Woo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WordPressOrgCredentials+Woo.swift"; sourceTree = "<group>"; };
 		D8CD710E237A49DB007148B9 /* UIColor+SemanticColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+SemanticColors.swift"; sourceTree = "<group>"; };
 		D8D15F82230A17A000D48B3F /* ServiceLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceLocator.swift; sourceTree = "<group>"; };
 		D8D15F84230A18AB00D48B3F /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
@@ -4547,6 +4549,7 @@
 				571CDD59250ACC470076B8CC /* UITableViewDiffableDataSource+Helpers.swift */,
 				D8810085257DCCF0008DE6F2 /* WordPressComSiteInfo+Woo.swift */,
 				025C00B925514A7100FAC222 /* BarcodeScannerFrameScaler.swift */,
+				D8CD07FE25919BBC00B52D63 /* WordPressOrgCredentials+Woo.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -5813,6 +5816,7 @@
 				0225C42C2477D0D500C5B4F0 /* ProductFormViewModel.swift in Sources */,
 				020F41E523163C0100776C4D /* TopBannerViewModel.swift in Sources */,
 				B541B2172189EED4008FE7C1 /* NSMutableAttributedString+Helpers.swift in Sources */,
+				D8CD07FF25919BBC00B52D63 /* WordPressOrgCredentials+Woo.swift in Sources */,
 				B586906621A5F4B1001F1EFC /* UINavigationController+Woo.swift in Sources */,
 				45FBDF3A238D3F8B00127F77 /* ExtendedAddProductImageCollectionViewCell.swift in Sources */,
 				02A410F52583A84C005E2925 /* SpacerTableViewCell.swift in Sources */,

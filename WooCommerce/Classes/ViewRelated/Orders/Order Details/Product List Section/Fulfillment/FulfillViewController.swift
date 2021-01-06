@@ -126,7 +126,8 @@ private extension FulfillViewController {
     /// Setup: Navigation Item
     ///
     func setupNavigationItem() {
-        title = NSLocalizedString("Fulfill Order #\(order.number)", comment: "Order Fulfillment Title")
+        let format = NSLocalizedString("Fulfill Order #%1$@", comment: "Order Fulfillment Title. Parameters: %1$@ - order number")
+        title = String.localizedStringWithFormat(format, order.number)
     }
 
     /// Setup: Main View
@@ -149,7 +150,7 @@ private extension FulfillViewController {
             CustomerInfoTableViewCell.self,
             CustomerNoteTableViewCell.self,
             LeftImageTableViewCell.self,
-            TopLeftImageTableViewCell.self,
+            ImageAndTitleAndTextTableViewCell.self,
             EditableOrderTrackingTableViewCell.self,
             PickListTableViewCell.self
         ]
@@ -235,10 +236,13 @@ private extension FulfillViewController {
     /// Displays the `Unable to Fulfill Order` Notice.
     ///
     func displayErrorNotice(orderID: Int64) {
-        let title = NSLocalizedString(
-            "Unable to fulfill order #\(orderID)",
-            comment: "Content of error presented when Fullfill Order Action Failed. It reads: Unable to fulfill order #{order number}"
+        let titleFormat = NSLocalizedString(
+            "Unable to fulfill order #%1$d",
+            comment: "Content of error presented when Fullfill Order Action Failed. "
+                + "It reads: Unable to fulfill order #{order number}. "
+                + "Parameters: %1$d - order number"
         )
+        let title = String.localizedStringWithFormat(titleFormat, orderID)
         let actionTitle = NSLocalizedString("Retry", comment: "Retry Action")
         let notice = Notice(title: title, message: nil, feedbackType: .error, actionTitle: actionTitle) { [weak self] in
             self?.fulfillWasPressed()
@@ -340,12 +344,17 @@ private extension FulfillViewController {
     /// Setup: Customer Note Cell
     ///
     private func setupCustomerNoteCell(_ cell: UITableViewCell, with note: String) {
-        guard let cell = cell as? TopLeftImageTableViewCell else {
+        guard let cell = cell as? ImageAndTitleAndTextTableViewCell else {
             fatalError()
         }
 
-        cell.imageView?.image = UIImage.quoteImage.imageWithTintColor(.black)
-        cell.textLabel?.text = note
+        cell.update(with: .imageAndTitleOnly(fontStyle: .body),
+                    data: .init(title: note,
+                                textTintColor: .text,
+                                image: .quoteImage,
+                                imageTintColor: .text,
+                                numberOfLinesForTitle: 0,
+                                isActionable: false))
 
         cell.isAccessibilityElement = true
         cell.accessibilityLabel = note
@@ -525,10 +534,13 @@ private extension FulfillViewController {
     /// Displays the `Unable to delete tracking` Notice.
     ///
     func displayDeleteErrorNotice(orderID: Int64, tracking: ShipmentTracking) {
-        let title = NSLocalizedString(
-            "Unable to delete tracking for order #\(orderID)",
-            comment: "Content of error presented when Delete Shipment Tracking Action Failed. It reads: Unable to delete tracking for order #{order number}"
+        let titleFormat = NSLocalizedString(
+            "Unable to delete tracking for order #%1$d",
+            comment: "Content of error presented when Delete Shipment Tracking Action Failed. "
+                + "It reads: Unable to delete tracking for order #{order number}. "
+                + "Parameters: %1$d - order number"
         )
+        let title = String.localizedStringWithFormat(titleFormat, orderID)
         let actionTitle = NSLocalizedString("Retry", comment: "Retry Action")
         let notice = Notice(title: title,
                             message: nil,
@@ -708,7 +720,7 @@ private enum Row {
         case .shippingMethod:
             return CustomerNoteTableViewCell.self
         case .note:
-            return TopLeftImageTableViewCell.self
+            return ImageAndTitleAndTextTableViewCell.self
         case .product:
             return PickListTableViewCell.self
         case .trackingAdd:

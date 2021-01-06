@@ -22,27 +22,9 @@ final class OrderDetailsViewModel {
         dataSource.update(order: order)
     }
 
-    /// The date displayed on the Orders List.
-    ///
-    /// The value will only include the year if the `createdDate` is not from the current year.
-    ///
-    var formattedDateCreated: String {
-        let isSameYear = order.dateCreated.isSameYear(as: Date())
-        let formatter: DateFormatter = isSameYear ? .monthAndDayFormatter : .mediumLengthLocalizedDateFormatter
-        return formatter.string(from: order.dateCreated)
-    }
-
     let productLeftTitle = NSLocalizedString("PRODUCT", comment: "Product section title")
 
     let productRightTitle = NSLocalizedString("QTY", comment: "Quantity abbreviation for section title")
-
-    /// The localized unabbreviated total which includes the currency.
-    ///
-    /// Example: $48,415,504.20
-    ///
-    var totalFriendlyString: String? {
-        currencyFormatter.formatAmount(order.total, with: order.currency)
-    }
 
     /// Products from an Order
     ///
@@ -160,7 +142,6 @@ extension OrderDetailsViewModel {
     ///
     func registerTableViewCells(_ tableView: UITableView) {
         let cells = [
-            TopLeftImageTableViewCell.self,
             LeftImageTableViewCell.self,
             CustomerNoteTableViewCell.self,
             CustomerInfoTableViewCell.self,
@@ -239,8 +220,9 @@ extension OrderDetailsViewModel {
             let shippingLabelDetailsViewController = ShippingLabelDetailsViewController(shippingLabel: shippingLabel)
             viewController.show(shippingLabelDetailsViewController, sender: viewController)
         case .shippingLabelPrintingInfo:
-            // TODO-2174: present instructions on how to print shipping labels
-            break
+            let printingInstructionsViewController = ShippingLabelPrintingInstructionsViewController()
+            let navigationController = WooNavigationController(rootViewController: printingInstructionsViewController)
+            viewController.present(navigationController, animated: true, completion: nil)
         case .shippingLabelProduct:
             guard let item = dataSource.shippingLabelOrderItem(at: indexPath), item.productOrVariationID > 0 else {
                 return
@@ -382,8 +364,10 @@ extension OrderDetailsViewModel {
         let action = ShippingLabelAction.synchronizeShippingLabels(siteID: order.siteID, orderID: order.orderID) { result in
             switch result {
             case .success:
+                ServiceLocator.analytics.track(event: .shippingLabelsAPIRequest(result: .success))
                 onCompletion?(nil)
             case .failure(let error):
+                ServiceLocator.analytics.track(event: .shippingLabelsAPIRequest(result: .failed))
                 DDLogError("⛔️ Error synchronizing shipping labels: \(error)")
                 onCompletion?(error)
             }

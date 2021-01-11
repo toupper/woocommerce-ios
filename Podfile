@@ -8,7 +8,7 @@ inhibit_all_warnings!
 use_frameworks! # Defaulting to use_frameworks! See pre_install hook below for static linking.
 use_modular_headers!
 
-app_ios_deployment_target = Gem::Version.new('12.0')
+app_ios_deployment_target = Gem::Version.new('13.0')
 
 platform :ios, app_ios_deployment_target.version
 workspace 'WooCommerce.xcworkspace'
@@ -48,6 +48,10 @@ target 'WooCommerce' do
   pod 'WordPressUI', '~> 1.7.2'
   # pod 'WordPressUI', :git => 'https://github.com/wordpress-mobile/WordPressUI-iOS.git', :branch => ''
 
+  # Necessary to make WordPressAuthenticator pin its dependency with WordPressKit to a version that does not break WPAuthenticator itself. Otherwise WPAuthenticator will pull a beta of WPKit. 
+  # This will be removed when UL&S is added back again.
+  pod 'WordPressKit', '4.23.0'
+
   aztec
 
   pod 'WPMediaPicker', '~> 1.7.1'
@@ -63,7 +67,7 @@ target 'WooCommerce' do
   pod 'Charts', '~> 3.6.0'
   pod 'ZendeskSupportSDK', '~> 5.0'
   pod 'Kingfisher', '~> 5.11.0'
-  pod 'Wormholy', '~> 1.6.2', :configurations => ['Debug']
+  pod 'Wormholy', '~> 1.6.4', :configurations => ['Debug']
 
   # Unit Tests
   # ==========

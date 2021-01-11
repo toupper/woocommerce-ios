@@ -1,10 +1,11 @@
 import Foundation
+import Networking
 import Yosemite
 
 /// This model represents a computed summary of order items.
 /// (order items - refunded order items) = aggregate order item data.
 ///
-struct AggregateOrderItem: Equatable {
+struct AggregateOrderItem: Equatable, GeneratedCopiable {
     let productID: Int64
     let variationID: Int64
 
@@ -15,10 +16,10 @@ struct AggregateOrderItem: Equatable {
     /// for localization and string-to-number conversions.
     /// `Decimal` doesn't have all of the `NSDecimalNumber` APIs (yet).
     ///
-    let price: NSDecimalNumber
+    let price: NSDecimalNumber?
     var quantity: Decimal
     let sku: String?
-    let total: NSDecimalNumber
+    let total: NSDecimalNumber?
 
     let imageURL: URL?
 
@@ -29,10 +30,10 @@ struct AggregateOrderItem: Equatable {
     init(productID: Int64,
          variationID: Int64,
          name: String,
-         price: NSDecimalNumber,
+         price: NSDecimalNumber?,
          quantity: Decimal,
          sku: String?,
-         total: NSDecimalNumber,
+         total: NSDecimalNumber?,
          imageURL: URL? = nil,
          attributes: [OrderItemAttribute]) {
         self.productID = productID

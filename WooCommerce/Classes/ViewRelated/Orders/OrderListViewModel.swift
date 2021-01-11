@@ -2,9 +2,9 @@ import Combine
 import Yosemite
 import class AutomatticTracks.CrashLogging
 import protocol Storage.StorageManagerType
+import Observables
 
-/// ViewModel for `OrderListViewController`. This will make `OrdersViewModel` obsolete when
-/// iOS 13.0 is set as the minimum version.
+/// ViewModel for `OrderListViewController`.
 ///
 /// This is an incremental WIP. Eventually, we should move all the data loading in here.
 ///
@@ -19,7 +19,6 @@ import protocol Storage.StorageManagerType
 /// This does not do anything at the moment. We will integrate `FetchResultsSnapshotsProvider`
 /// in here next.
 ///
-@available(iOS 13.0, *)
 final class OrderListViewModel {
     private let storageManager: StorageManagerType
     private let pushNotificationsManager: PushNotesManager
@@ -143,7 +142,6 @@ final class OrderListViewModel {
 
 // MARK: - Remote Notifications Observation
 
-@available(iOS 13.0, *)
 private extension OrderListViewModel {
     /// Watch for "new order" Remote Notifications that are received while the app is in the
     /// foreground.
@@ -167,7 +165,6 @@ private extension OrderListViewModel {
 
 // MARK: - TableView Support
 
-@available(iOS 13.0, *)
 extension OrderListViewModel {
     /// Creates an `OrderDetailsViewModel` for the `Order` pointed to by `objectID`.
     func detailsViewModel(withID objectID: FetchResultSnapshotObjectID) -> OrderDetailsViewModel? {

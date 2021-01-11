@@ -64,6 +64,7 @@ final class OrderDetailsViewController: UIViewController {
         super.viewWillAppear(animated)
         syncNotes()
         syncProducts()
+        syncProductVariations()
         syncRefunds()
         if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.shippingLabelsRelease1) {
             syncShippingLabels()
@@ -226,6 +227,11 @@ extension OrderDetailsViewController {
         }
 
         group.enter()
+        syncProductVariations { _ in
+            group.leave()
+        }
+
+        group.enter()
         syncRefunds() { _ in
             group.leave()
         }
@@ -281,6 +287,10 @@ private extension OrderDetailsViewController {
         viewModel.syncProducts(onCompletion: onCompletion)
     }
 
+    func syncProductVariations(onCompletion: ((Error?) -> ())? = nil) {
+        viewModel.syncProductVariations(onCompletion: onCompletion)
+    }
+
     func syncRefunds(onCompletion: ((Error?) -> ())? = nil) {
         viewModel.syncRefunds(onCompletion: onCompletion)
     }
@@ -320,6 +330,11 @@ private extension OrderDetailsViewController {
             trackingWasPressed(at: indexPath)
         case .issueRefund:
             issueRefundWasPressed()
+        case .reprintShippingLabel(let shippingLabel):
+            let reprintViewController = ReprintShippingLabelViewController(shippingLabel: shippingLabel)
+            show(reprintViewController, sender: self)
+        case .shippingLabelTrackingMenu(let shippingLabel, let sourceView):
+            shippingLabelTrackingMoreMenuTapped(shippingLabel: shippingLabel, sourceView: sourceView)
         }
     }
 
@@ -348,10 +363,8 @@ private extension OrderDetailsViewController {
     }
 
     func issueRefundWasPressed() {
-        // TODO: Migrate to a CoordinatingController https://github.com/woocommerce/woocommerce-ios/issues/2844
-        let issueRefundViewController = IssueRefundViewController(order: viewModel.order, refunds: viewModel.refunds)
-        let navigationController = WooNavigationController(rootViewController: issueRefundViewController)
-        present(navigationController, animated: true)
+        let issueRefundCoordinatingController = IssueRefundCoordinatingController(order: viewModel.order, refunds: viewModel.refunds)
+        present(issueRefundCoordinatingController, animated: true)
     }
 
     func displayWebView(url: URL) {
@@ -365,8 +378,39 @@ private extension OrderDetailsViewController {
 
         actionSheet.addCancelActionWithTitle(Localization.ShippingLabelMoreMenu.cancelAction)
 
-        actionSheet.addDefaultActionWithTitle(Localization.ShippingLabelMoreMenu.requestRefundAction) { _ in
-            // TODO-2168: refund a shipping label
+        actionSheet.addDefaultActionWithTitle(Localization.ShippingLabelMoreMenu.requestRefundAction) { [weak self] _ in
+            let refundViewController = RefundShippingLabelViewController(shippingLabel: shippingLabel) { [weak self] in
+                self?.navigationController?.popViewController(animated: true)
+            }
+            // Disables the bottom bar (tab bar) when requesting a refund.
+            refundViewController.hidesBottomBarWhenPushed = true
+            self?.show(refundViewController, sender: self)
+        }
+
+        let popoverController = actionSheet.popoverPresentationController
+        popoverController?.sourceView = sourceView
+
+        present(actionSheet, animated: true)
+    }
+
+    func shippingLabelTrackingMoreMenuTapped(shippingLabel: ShippingLabel, sourceView: UIView) {
+        let actionSheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        actionSheet.view.tintColor = .text
+
+        actionSheet.addCancelActionWithTitle(Localization.ShippingLabelTrackingMoreMenu.cancelAction)
+
+        actionSheet.addDefaultActionWithTitle(Localization.ShippingLabelTrackingMoreMenu.copyTrackingNumberAction) { [weak self] _ in
+            self?.viewModel.dataSource.sendToPasteboard(shippingLabel.trackingNumber, includeTrailingNewline: false)
+        }
+
+        // Only shows the tracking action when there is a tracking URL.
+        if let url = ShippingLabelTrackingURLGenerator.url(for: shippingLabel) {
+            actionSheet.addDefaultActionWithTitle(Localization.ShippingLabelTrackingMoreMenu.trackShipmentAction) { [weak self] _ in
+                guard let self = self else { return }
+                let safariViewController = SFSafariViewController(url: url)
+                safariViewController.modalPresentationStyle = .pageSheet
+                self.present(safariViewController, animated: true, completion: nil)
+            }
         }
 
         let popoverController = actionSheet.popoverPresentationController
@@ -525,6 +569,16 @@ private extension OrderDetailsViewController {
             static let cancelAction = NSLocalizedString("Cancel", comment: "Cancel the shipping label more menu action sheet")
             static let requestRefundAction = NSLocalizedString("Request a Refund",
                                                                comment: "Request a refund on a shipping label from the shipping label more menu action sheet")
+        }
+
+        enum ShippingLabelTrackingMoreMenu {
+            static let cancelAction = NSLocalizedString("Cancel", comment: "Cancel the shipping label tracking more menu action sheet")
+            static let copyTrackingNumberAction =
+                NSLocalizedString("Copy tracking number",
+                                  comment: "Copy tracking number of a shipping label from the shipping label tracking more menu action sheet")
+            static let trackShipmentAction =
+                NSLocalizedString("Track shipment",
+                                  comment: "Track shipment of a shipping label from the shipping label tracking more menu action sheet")
         }
     }
 

@@ -274,6 +274,22 @@ public extension StorageType {
         return firstObject(ofType: ProductAttribute.self, matching: predicate)
     }
 
+    /// Retrieves the Stored Product Attribute by ID.
+    ///
+    /// Note: this method is useful to fetch global attributes, which always have a non-zero ID.
+    ///
+    func loadProductAttribute(siteID: Int64, attributeID: Int64) -> ProductAttribute? {
+        let predicate = NSPredicate(format: "siteID = %ld AND attributeID = %ld", siteID, attributeID)
+        return firstObject(ofType: ProductAttribute.self, matching: predicate)
+    }
+
+    /// Retrieves the all of the stored Product Attributes for a `siteID`.
+    ///
+    func loadProductAttributes(siteID: Int64) -> [ProductAttribute] {
+        let predicate = NSPredicate(format: "siteID = %ld", siteID)
+        return allObjects(ofType: ProductAttribute.self, matching: predicate, sortedBy: nil)
+    }
+
     /// Retrieves the Stored Product Default Attribute.
     ///
     /// Note: WC default attribute ID's often have an ID of `0`, so we need to also look them up by name 😏

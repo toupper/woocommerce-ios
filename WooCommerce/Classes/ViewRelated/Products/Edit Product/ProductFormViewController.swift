@@ -2,6 +2,7 @@ import Photos
 import UIKit
 import WordPressUI
 import Yosemite
+import Observables
 
 /// The entry UI for adding/editing a Product.
 final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: UIViewController, UITableViewDelegate {
@@ -341,7 +342,15 @@ final class ProductFormViewController<ViewModel: ProductFormViewModelProtocol>: 
                 break
             case .variations:
                 ServiceLocator.analytics.track(.productDetailViewVariationsTapped)
-                guard let product = product as? EditableProductModel, product.product.variations.isNotEmpty else {
+                guard let product = product as? EditableProductModel else {
+                    return
+                }
+                guard product.product.variations.isNotEmpty else {
+                    if isEditProductsRelease5Enabled {
+                        let viewModel = AddAttributeViewModel(product: product.product)
+                        let addAttributeViewController = AddAttributeViewController(viewModel: viewModel)
+                        navigationController?.pushViewController(addAttributeViewController, animated: true)
+                    }
                     return
                 }
                 let variationsViewController = ProductVariationsViewController(product: product.product,
@@ -621,12 +630,7 @@ private extension ProductFormViewController {
     func displayInProgressView(title: String, message: String) {
         let viewProperties = InProgressViewProperties(title: title, message: message)
         let inProgressViewController = InProgressViewController(viewProperties: viewProperties)
-
-        // Before iOS 13, a modal with transparent background requires certain
-        // `modalPresentationStyle` to prevent the view from turning dark after being presented.
-        if #available(iOS 13.0, *) {} else {
-            inProgressViewController.modalPresentationStyle = .overCurrentContext
-        }
+        inProgressViewController.modalPresentationStyle = .overCurrentContext
 
         navigationController?.present(inProgressViewController, animated: true, completion: nil)
     }

@@ -38,7 +38,12 @@ struct AggregatedShippingLabelOrderItems {
 
     /// Returns an order item for a shipping label given an index, if available. Otherwise, nil is returned.
     func orderItem(of shippingLabel: ShippingLabel, at index: Int) -> AggregateOrderItem? {
-        return orderItems(of: shippingLabel)[safe: index]
+        orderItems(of: shippingLabel)[safe: index]
+    }
+
+    /// Returns an array of order items from all of the given non-refunded shipping labels.
+    func orderItemsOfNonRefundedShippingLabels(_ shippingLabels: [ShippingLabel]) -> [AggregateOrderItem] {
+        shippingLabels.nonRefunded.flatMap { orderItems(of: $0) }
     }
 }
 
@@ -108,7 +113,7 @@ private extension AggregatedShippingLabelOrderItems {
     func orderItem(from model: OrderItemModel, quantity: Int) -> AggregateOrderItem {
         switch model {
         case .productName(let name):
-            return .init(productID: 0, variationID: 0, name: name, price: 0, quantity: 0, sku: nil, total: 0, attributes: [])
+            return .init(productID: 0, variationID: 0, name: name, price: nil, quantity: 0, sku: nil, total: nil, attributes: [])
         case .product(let product, let orderItem, let name):
             let productName = orderItem?.name ?? name
             let price = orderItem?.price ??

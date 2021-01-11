@@ -1,4 +1,5 @@
 import UIKit
+import Observables
 
 /// The view model protocol for filtering a list of models with generic filters.
 ///
@@ -192,9 +193,7 @@ private extension FilterListViewController {
         clearAllBarButtonItem = UIBarButtonItem(title: clearAllButtonTitle, style: .plain, target: self, action: #selector(clearAllButtonTapped))
 
         // Disables interactive dismiss action so that we can prompt the discard changes alert.
-        if #available(iOS 13.0, *) {
-            isModalInPresentation = true
-        }
+        isModalInPresentation = true
 
         listSelector.removeNavigationBackBarButtonText()
     }

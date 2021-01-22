@@ -1,2 +1,5 @@
-Uygulama artık daha hızlı özellik geliştirmeye olanak tanıyacak olan iOS 13 ve üzerini destekliyor.
-Sipariş ayrıntıları ekranında ürün varyasyonları için küçük resimlerin görünmesini engelleyen bir hatayı düzelttik ve altbilgi döndürücüyü dikey ve yatay olarak ortaladık.
+Ürünler: Tüm kullanıcılar artık bağlantılı ürünleri ekleyip düzenleyebilir, indirilebilir dosyalar ekleyip düzenleyebilir ve bir ürünü silebilir.
+
+Gönderi: Artık gönderi etiketi ayrıntılarını görüntüleyebilir, para iadesi isteyebilir ve AirPrint ile gönderi etiketini yeniden yazdırabilirsiniz.
+
+Giriş: Hataların daha iyi ele alınması da dahil olmak üzere giriş akışında çeşitli iyileştirmeler yapılmıştır.

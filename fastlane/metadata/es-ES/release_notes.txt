@@ -1,2 +1,5 @@
-Ahora, la aplicación es compatible con iOS 13 y versiones posteriores. Esto permitirá desarrollar las funciones más rápidamente.
-Hemos corregido un error que hacía que las miniaturas de imagen no aparecieran en las variaciones de producto en la pantalla Detalles del pedido, y hemos centrado el indicador giratorio del pie de página tanto vertical como horizontalmente.
+Productos: Ahora, todos los usuarios pueden añadir y editar productos vinculados, añadir y editar archivos descargables y eliminar un producto.
+
+Envío: Ahora, puedes ver los detalles de la etiqueta de envío, solicitar un reembolso y volver a imprimir una etiqueta de envío con AirPrint.
+
+Inicio de sesión: Hemos realizado diversas mejoras en el flujo de inicio de sesión, incluida una mejora en la gestión de errores.

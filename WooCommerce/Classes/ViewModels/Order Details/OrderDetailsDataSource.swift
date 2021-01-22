@@ -80,7 +80,10 @@ final class OrderDetailsDataSource: NSObject {
         return resultsControllers.refunds
     }
 
-    private var shippingLabels: [ShippingLabel] = []
+    /// Shipping Labels for an Order
+    ///
+    private(set) var shippingLabels: [ShippingLabel] = []
+
     private var shippingLabelOrderItemsAggregator: AggregatedShippingLabelOrderItems = AggregatedShippingLabelOrderItems.empty
 
     /// Shipping Lines from an Order
@@ -121,7 +124,7 @@ final class OrderDetailsDataSource: NSObject {
     /// All the condensed refunds in an order
     ///
     var condensedRefunds: [OrderRefundCondensed] {
-        return order.refunds
+        return order.refunds.sorted(by: { $0.refundID > $1.refundID })
     }
 
     /// Notes of an Order
@@ -257,9 +260,9 @@ private extension OrderDetailsDataSource {
             configureBillingDetail(cell: cell)
         case let cell as WooBasicTableViewCell where row == .shippingLabelDetail:
             configureShippingLabelDetail(cell: cell)
-        case let cell as TopLeftImageTableViewCell where row == .shippingNotice:
+        case let cell as ImageAndTitleAndTextTableViewCell where row == .shippingNotice:
             configureShippingNotice(cell: cell)
-        case let cell as TopLeftImageTableViewCell where row == .shippingLabelPrintingInfo:
+        case let cell as ImageAndTitleAndTextTableViewCell where row == .shippingLabelPrintingInfo:
             configureShippingLabelPrintingInfo(cell: cell)
         case let cell as LeftImageTableViewCell where row == .addOrderNote:
             configureNewNote(cell: cell)
@@ -330,13 +333,17 @@ private extension OrderDetailsDataSource {
         )
     }
 
-    private func configureShippingNotice(cell: TopLeftImageTableViewCell) {
+    private func configureShippingNotice(cell: ImageAndTitleAndTextTableViewCell) {
         let cellTextContent = NSLocalizedString(
             "This order is using extensions to calculate shipping. The shipping methods shown might be incomplete.",
             comment: "Shipping notice row label when there is more than one shipping method")
-        cell.imageView?.image = Icons.shippingNoticeIcon
-        cell.imageView?.tintColor = .accent
-        cell.textLabel?.text = cellTextContent
+
+        let viewModel = ImageAndTitleAndTextTableViewCell.TopLeftImageViewModel(icon: Icons.shippingNoticeIcon,
+                                                                                iconColor: .accent,
+                                                                                title: cellTextContent,
+                                                                                isFootnoteStyle: false)
+        cell.updateUI(topLeftImageViewModel: viewModel)
+
         cell.selectionStyle = .none
 
         cell.accessibilityTraits = .staticText
@@ -453,12 +460,15 @@ private extension OrderDetailsDataSource {
         )
     }
 
-    private func configureShippingLabelPrintingInfo(cell: TopLeftImageTableViewCell) {
-        cell.imageView?.image = .infoOutlineFootnoteImage
-        cell.imageView?.tintColor = .systemColor(.secondaryLabel)
-        cell.textLabel?.text = Title.shippingLabelPrintingInfoAction
-        cell.textLabel?.textColor = .systemColor(.secondaryLabel)
-        cell.textLabel?.applyFootnoteStyle()
+    private func configureShippingLabelPrintingInfo(cell: ImageAndTitleAndTextTableViewCell) {
+        cell.update(with: .imageAndTitleOnly(fontStyle: .footnote),
+                    data: .init(title: Title.shippingLabelPrintingInfoAction,
+                                image: .infoOutlineFootnoteImage,
+                                imageTintColor: .systemColor(.secondaryLabel),
+                                numberOfLinesForTitle: 0,
+                                isActionable: false,
+                                showsSeparator: false))
+
         cell.selectionStyle = .default
 
         cell.accessibilityTraits = .button
@@ -526,13 +536,16 @@ private extension OrderDetailsDataSource {
     }
 
     private func configureReprintShippingLabelButton(cell: ButtonTableViewCell, at indexPath: IndexPath) {
-        cell.configure(style: .secondary, title: Titles.reprintShippingLabel) { [weak self] in
+        cell.configure(style: .secondary,
+                       title: Titles.reprintShippingLabel,
+                       bottomSpacing: 8) { [weak self] in
             guard let self = self else { return }
             guard let shippingLabel = self.shippingLabel(at: indexPath) else {
                 return
             }
             self.onCellAction?(.reprintShippingLabel(shippingLabel: shippingLabel), nil)
         }
+        cell.hideSeparator()
     }
 
     private func configureAggregateOrderItem(cell: ProductDetailsTableViewCell, at indexPath: IndexPath) {
@@ -581,6 +594,7 @@ private extension OrderDetailsDataSource {
         cell.configure(title: Titles.fulfillTitle) { [weak self] in
             self?.onCellAction?(.fulfill, nil)
         }
+        cell.showSeparator()
     }
 
     private func configureIssueRefundButton(cell: IssueRefundTableViewCell) {
@@ -811,8 +825,8 @@ extension OrderDetailsDataSource {
 
         let payment: Section = {
             var rows: [Row] = [.payment, .customerPaid]
-            if order.refunds.count > 0 {
-                let refunds = Array<Row>(repeating: .refund, count: order.refunds.count)
+            if condensedRefunds.isNotEmpty {
+                let refunds = Array<Row>(repeating: .refund, count: condensedRefunds.count)
                 rows.append(contentsOf: refunds)
                 rows.append(.netAmount)
             }
@@ -877,7 +891,7 @@ extension OrderDetailsDataSource {
 
     func refund(at indexPath: IndexPath) -> Refund? {
         let index = indexPath.row - Constants.paymentCell - Constants.paidByCustomerCell
-        let condensedRefund = order.refunds[index]
+        let condensedRefund = condensedRefunds[index]
         let refund = refunds.first { $0.refundID == condensedRefund.refundID }
 
         guard let refundFound = refund else {
@@ -1221,7 +1235,7 @@ extension OrderDetailsDataSource {
             case .shippingLabelDetail:
                 return WooBasicTableViewCell.reuseIdentifier
             case .shippingLabelPrintingInfo:
-                return TopLeftImageTableViewCell.reuseIdentifier
+                return ImageAndTitleAndTextTableViewCell.reuseIdentifier
             case .shippingLabelProduct:
                 return ProductDetailsTableViewCell.reuseIdentifier
             case .shippingLabelTrackingNumber, .shippingLabelRefunded:
@@ -1229,7 +1243,7 @@ extension OrderDetailsDataSource {
             case .shippingLabelReprintButton:
                 return ButtonTableViewCell.reuseIdentifier
             case .shippingNotice:
-                return TopLeftImageTableViewCell.reuseIdentifier
+                return ImageAndTitleAndTextTableViewCell.reuseIdentifier
             case .addOrderNote:
                 return LeftImageTableViewCell.reuseIdentifier
             case .orderNoteHeader:

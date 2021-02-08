@@ -282,8 +282,8 @@ private extension OrderDetailsDataSource {
             configureShippingLabelProduct(cell: cell, at: indexPath)
         case let cell as ProductDetailsTableViewCell where row == .aggregateOrderItem:
             configureAggregateOrderItem(cell: cell, at: indexPath)
-        case let cell as ButtonTableViewCell where row == .fulfillButton:
-            configureFulfillmentButton(cell: cell)
+        case let cell as ButtonTableViewCell where row == .markCompleteButton:
+            configureMarkCompleteButton(cell: cell)
         case let cell as ButtonTableViewCell where row == .shippingLabelReprintButton:
             configureReprintShippingLabelButton(cell: cell, at: indexPath)
         case let cell as OrderTrackingTableViewCell where row == .tracking:
@@ -338,11 +338,13 @@ private extension OrderDetailsDataSource {
             "This order is using extensions to calculate shipping. The shipping methods shown might be incomplete.",
             comment: "Shipping notice row label when there is more than one shipping method")
 
-        let viewModel = ImageAndTitleAndTextTableViewCell.TopLeftImageViewModel(icon: Icons.shippingNoticeIcon,
-                                                                                iconColor: .accent,
-                                                                                title: cellTextContent,
-                                                                                isFootnoteStyle: false)
-        cell.updateUI(topLeftImageViewModel: viewModel)
+        cell.update(with: .imageAndTitleOnly(fontStyle: .body),
+                    data: .init(title: cellTextContent,
+                                textTintColor: .text,
+                                image: Icons.shippingNoticeIcon,
+                                imageTintColor: .listIcon,
+                                numberOfLinesForTitle: 0,
+                                isActionable: false))
 
         cell.selectionStyle = .none
 
@@ -590,9 +592,9 @@ private extension OrderDetailsDataSource {
         )
     }
 
-    private func configureFulfillmentButton(cell: ButtonTableViewCell) {
-        cell.configure(title: Titles.fulfillTitle) { [weak self] in
-            self?.onCellAction?(.fulfill, nil)
+    private func configureMarkCompleteButton(cell: ButtonTableViewCell) {
+        cell.configure(title: Titles.markComplete) { [weak self] in
+            self?.onCellAction?(.markComplete, nil)
         }
         cell.showSeparator()
     }
@@ -746,7 +748,7 @@ extension OrderDetailsDataSource {
             var rows: [Row] = Array(repeating: .aggregateOrderItem, count: aggregateOrderItemCount)
 
             if isProcessingPayment {
-                rows.append(.fulfillButton)
+                rows.append(.markCompleteButton)
             } else if isRefundedStatus == false {
                 rows.append(.details)
             }
@@ -1039,15 +1041,14 @@ extension OrderDetailsDataSource {
     enum Titles {
         static let productDetails = NSLocalizedString("Details",
                                                       comment: "The row label to tap for a detailed product list")
-        static let fulfillTitle = NSLocalizedString("Begin Fulfillment",
-                                                    comment: "Begin fulfill order button title")
+        static let markComplete = NSLocalizedString("Mark Order Complete", comment: "Fulfill Order Action Button")
         static let addNoteText = NSLocalizedString("Add a note",
                                                    comment: "Button text for adding a new order note")
-        static let paidByCustomer = NSLocalizedString("Paid By Customer",
+        static let paidByCustomer = NSLocalizedString("Paid",
                                                       comment: "The title for the customer payment cell")
         static let refunded = NSLocalizedString("Refunded",
                                                 comment: "The title for the refunded amount cell")
-        static let netAmount = NSLocalizedString("Net", comment: "The title for the net amount paid cell")
+        static let netAmount = NSLocalizedString("Net Payment", comment: "The title for the net amount paid cell")
         static let reprintShippingLabel = NSLocalizedString("Reprint Shipping Label", comment: "Text on the button that reprints a shipping label")
     }
 
@@ -1173,7 +1174,7 @@ extension OrderDetailsDataSource {
     enum Row {
         case summary
         case aggregateOrderItem
-        case fulfillButton
+        case markCompleteButton
         case details
         case refundedProducts
         case issueRefundButton
@@ -1204,7 +1205,7 @@ extension OrderDetailsDataSource {
                 return SummaryTableViewCell.reuseIdentifier
             case .aggregateOrderItem:
                 return ProductDetailsTableViewCell.reuseIdentifier
-            case .fulfillButton:
+            case .markCompleteButton:
                 return ButtonTableViewCell.reuseIdentifier
             case .details:
                 return WooBasicTableViewCell.reuseIdentifier
@@ -1255,7 +1256,7 @@ extension OrderDetailsDataSource {
     }
 
     enum CellActionType {
-        case fulfill
+        case markComplete
         case tracking
         case summary
         case issueRefund

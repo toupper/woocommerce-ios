@@ -36,9 +36,5 @@ private extension CardReaderSettingsViewController {
         })
 
         ServiceLocator.stores.dispatch(discoveryAction)
-
-//        cancellable = viewModel.objectWillChange.sink { [weak self] in
-//            self?.render()
-//        }
     }
 }

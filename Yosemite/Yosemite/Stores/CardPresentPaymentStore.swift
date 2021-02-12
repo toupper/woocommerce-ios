@@ -61,9 +61,9 @@ private extension CardPresentPaymentStore {
             let yosemiteReaaders = readers.map {
                 Yosemite.CardReader(name: $0.name, serialNumber: $0.serial)
             }
+
+            // This hurts a bit, but for now it works
             completion(yosemiteReaaders)
-//            future(
-            //self.discoveredReadersSubject.send(yosemiteReaaders)
         }
     }
 }

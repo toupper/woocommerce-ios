@@ -4,4 +4,6 @@
 /// For now, this is a placeholder
 public struct CardReader {
     public let status: CardReaderStatus
+    public let name: String
+    public let serial: String
 }

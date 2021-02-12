@@ -147,9 +147,8 @@ extension StripeCardReaderService: CardReaderService {
 extension StripeCardReaderService: DiscoveryDelegate {
     /// Enough code to pass the test
     public func terminal(_ terminal: Terminal, didUpdateDiscoveredReaders readers: [Reader]) {
-        // Map Stripe's Reader to Hardware.CardReader
-        let wooReaders = readers.map { _ in
-            CardReader(status: .init(connected: false, remembered: false))
+        let wooReaders = readers.map {
+            CardReader(reader: $0)
         }
 
         discoveredReadersSubject.send(wooReaders)

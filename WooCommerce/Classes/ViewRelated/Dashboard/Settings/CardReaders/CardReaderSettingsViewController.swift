@@ -1,7 +1,10 @@
 import UIKit
 import Yosemite
+import Combine
 
 class CardReaderSettingsViewController: UIViewController {
+    private var cancellable: AnyCancellable?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         configureNavigation()
@@ -27,8 +30,15 @@ private extension CardReaderSettingsViewController {
 
     // This should be implemented in a view model. But for brevity, we'll do it here for now
     func syncReaders() {
-        let discoveryAction = CardPresentPaymentAction.startCardReaderDiscovery
+
+        let discoveryAction = CardPresentPaymentAction.startCardReaderDiscovery(onCompletion: { readers in
+            print("==== readers in view controller ", readers)
+        })
 
         ServiceLocator.stores.dispatch(discoveryAction)
+
+//        cancellable = viewModel.objectWillChange.sink { [weak self] in
+//            self?.render()
+//        }
     }
 }

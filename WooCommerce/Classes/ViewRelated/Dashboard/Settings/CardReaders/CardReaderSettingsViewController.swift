@@ -1,9 +1,11 @@
 import UIKit
+import Yosemite
 
 class CardReaderSettingsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureNavigation()
+        syncReaders()
     }
 }
 
@@ -21,5 +23,12 @@ private extension CardReaderSettingsViewController {
                                          action: nil)
 
         navigationItem.backBarButtonItem = backButton
+    }
+
+    // This should be implemented in a view model. But for brevity, we'll do it here for now
+    func syncReaders() {
+        let discoveryAction = CardPresentPaymentAction.startCardReaderDiscovery
+
+        ServiceLocator.stores.dispatch(discoveryAction)
     }
 }

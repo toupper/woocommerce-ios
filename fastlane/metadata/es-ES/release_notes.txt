@@ -1,11 +1,5 @@
-El equipo de WooCommerce está encantado de presentar las últimas actualizaciones de su aplicación móvil.
+Novedades de la versión 6.0
 
-Actualizar y listo: imaginemos que un usuario aplica parámetros de orden y/o filtros a la lista de productos de tu tienda; lo más probable es que no quiera repetir ese proceso la próxima vez que vuelva a usar aplicación. ¡No hay problema! Ahora, si el usuario vuelve a abrir la aplicación, podrá ver su configuración anterior.
+Hemos respondido a tus peticiones. Por demanda popular, ahora la SKU de los productos vuelve a mostrarse en la pantalla Detalles del pedido.
 
-Consolidación: la pantalla específica de envío es cosa del pasado. Ahora, la información de envío aparece en la pantalla de información del pedido, así como la información sobre tarifas.
-
-¡Adiós, errores! Hemos corregido varios fallos; aquí tienes una pequeña muestra:
-
-- Las hojas de acción de la información de facturación ya se ven correctamente en los dispositivos iPad.
-- Las filas de las listas de búsqueda de productos ya no tienen separadores dobles.
-- Los indicadores giratorios de los botones "Continuar" ya se pueden ver en el modo oscuro.
+También hemos hecho varias mejoras: ahora los productos relacionados pueden ordenarse arrastrándolos y soltándolos, hay una mayor homogeneidad en las estadísticas de visitantes en el escritorio y en los productos con mejor rendimiento en la pestaña "Esta semana", y hemos reducido el riesgo de que se produzcan fallos al actualizar la app.

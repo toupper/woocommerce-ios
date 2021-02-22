@@ -1,11 +1,5 @@
-O WooCommerce tem o prazer de anunciar as atualizações mais recentes no seu aplicativo móvel.
+Novidades da versão 6.0.
 
-Atualize e pronto: digamos que um usuário aplique parâmetros de ordenação e/ou filtros na lista de produtos da sua loja, mas não queira repetir esse processo quando retornar ao aplicativo. Sem problema! Agora, se um usuário reabrir o aplicativo, ele poderá ver suas configurações anteriores.
+Você pediu, nós atendemos! Devido a inúmeros pedidos, o SKU do produto é exibido mais uma vez na tela de Detalhes do pedido.
 
-Consolidação: a tela de controle de vendas designada é coisa do passado. Agora, as informações de taxas e de controle de vendas ficam na tela de detalhes do pedido.
-
-Demos um fim nos bugs: corrigimos diversas falhas, por exemplo:
-
-- As janelas de ações das informações de cobrança agora são exibidas corretamente nos iPads.
-- As linhas nas listas de pesquisa de produtos não têm mais separadores duplos.
-- Os ícones de carregamento nos botões de "Continuar" agora são visíveis no modo escuro.
+Também fizemos várias melhorias, incluindo suporte para classificação com arraste e solte para os Produtos vinculados, correções de consistência para estatísticas de visitantes no painel e melhor desempenho na guia “Esta semana”, além de uma melhoria que reduz o risco de travamentos ao atualizar o aplicativo.

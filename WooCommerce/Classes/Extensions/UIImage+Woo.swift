@@ -19,6 +19,12 @@ extension UIImage {
         return UIImage.gridicon(.arrowUp)
     }
 
+    /// Align justify Icon
+    ///
+    static var alignJustifyImage: UIImage {
+        return UIImage.gridicon(.alignJustify)
+    }
+
     /// Notice Icon
     ///
     static var noticeImage: UIImage {
@@ -132,6 +138,13 @@ extension UIImage {
     ///
     static var creditCardImage: UIImage {
         UIImage.gridicon(.creditCard)
+    }
+
+    /// Customize Icon
+    ///
+    static var customizeImage: UIImage {
+        UIImage.gridicon(.customize)
+            .imageFlippedForRightToLeftLayoutDirection()
     }
 
     /// Delete Icon
@@ -551,6 +564,12 @@ extension UIImage {
     ///
     static var errorImage: UIImage {
         return UIImage(imageLiteralResourceName: "woo-error").imageFlippedForRightToLeftLayoutDirection()
+    }
+
+    /// Empty box image
+    ///
+    static var emptyBoxImage: UIImage {
+        UIImage(imageLiteralResourceName: "empty-box")
     }
 
     /// Creates a bitmap image of the Woo "bubble" logo based on a vector image in our asset catalog.

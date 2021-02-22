@@ -1,11 +1,5 @@
-WooCommerce, mobil uygulamasıyla ilgili en son güncellemeleri sunmaktan heyecan duyuyor. 
+6.0 sürümümüzdeki yenilikler nelerdir?
 
-Yenileyin, Her Şey Hazır Olsun: Bir kullanıcının mağazanızın ürün listesine sıralama parametreleri ve/veya filtreler uyguladığını varsayalım. Büyük olasılıkla, uygulamaya döndüklerinde bu işlemi tekrarlamak istemezler. Sorun değil! Artık bir kullanıcı uygulamayı yeniden açtığında önceki ayarlarını görebilir.
+Siz istediniz, biz yaptık! Yaygın talepten dolayı ürün SKU'su Sipariş Ayrıntıları ekranında yeniden görüntüleniyor.
 
-Birleştirme: Özel işlem tamamlama ekranı artık geçmişte kaldı; işlem tamamlama bilgileri artık ücretlerle ilgili bilgiler gibi sipariş ayrıntıları ekranında görüntüleniyor.
-
-Hatalar Giderildi: Birkaç sorun düzeltildi. İşte bir tanesi:
-
-- Fatura bilgileri işlem sayfaları artık iPad'lerde doğru şekilde görünüyor.
-- Ürün arama listelerindeki satırlarda artık çift ayırıcı yok.
-- "Devam" düğmelerindeki döndürücüler artık karanlık modda görünüyor.
+Ayrıca Bağlantılı Ürünlere sürükleyip bırakarak sıralama desteği, yönetim panelinizdeki ziyaretçi istatistikleri ile "Bu Hafta" sekmenizdeki en iyi performans gösteren ürünlere yönelik tutarlılık açısından düzeltmeler ve uygulamayı güncellerken meydana gelen kilitlenme riskini azaltan bir iyileştirme de dahil olmak üzere çeşitli iyileştirmeler yaptık.

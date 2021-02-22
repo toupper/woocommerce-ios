@@ -1,9 +1,11 @@
 import UIKit
 import Yosemite
+import WordPressUI
 
 final class AddAttributeOptionsViewController: UIViewController {
 
     @IBOutlet weak private var tableView: UITableView!
+    private let ghostTableView = UITableView()
 
     private let viewModel: AddAttributeOptionsViewModel
 
@@ -29,9 +31,12 @@ final class AddAttributeOptionsViewController: UIViewController {
         configureNavigationBar()
         configureMainView()
         configureTableView()
+        configureGhostTableView()
         registerTableViewHeaderSections()
         registerTableViewCells()
         startListeningToNotifications()
+        observeViewModel()
+        renderViewModel()
     }
 }
 
@@ -40,8 +45,6 @@ final class AddAttributeOptionsViewController: UIViewController {
 private extension AddAttributeOptionsViewController {
 
     func configureNavigationBar() {
-        title = viewModel.titleView
-
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: Localization.nextNavBarButton,
                                                            style: .plain,
                                                            target: self,
@@ -60,6 +63,16 @@ private extension AddAttributeOptionsViewController {
 
         tableView.dataSource = self
         tableView.delegate = self
+        tableView.isEditing = true
+    }
+
+    func configureGhostTableView() {
+        view.addSubview(ghostTableView)
+        ghostTableView.isHidden = true
+        ghostTableView.translatesAutoresizingMaskIntoConstraints = false
+        ghostTableView.pinSubviewToAllEdges(view)
+        ghostTableView.backgroundColor = .listBackground
+        ghostTableView.removeLastCellSeparator()
     }
 
     func registerTableViewHeaderSections() {
@@ -68,8 +81,27 @@ private extension AddAttributeOptionsViewController {
     }
 
     func registerTableViewCells() {
-        for row in Row.allCases {
-            tableView.registerNib(for: row.type)
+        tableView.registerNib(for: BasicTableViewCell.self)
+        tableView.registerNib(for: TextFieldTableViewCell.self)
+        ghostTableView.registerNib(for: WooBasicTableViewCell.self)
+    }
+
+    func observeViewModel() {
+        viewModel.onChange = { [weak self] in
+            guard let self = self else { return }
+            self.renderViewModel()
+        }
+    }
+
+    func renderViewModel() {
+        title = viewModel.titleView
+        navigationItem.rightBarButtonItem?.isEnabled = viewModel.isNextButtonEnabled
+        tableView.reloadData()
+
+        if viewModel.showGhostTableView {
+            displayGhostTableView()
+        } else {
+            removeGhostTableView()
         }
     }
 }
@@ -92,6 +124,35 @@ extension AddAttributeOptionsViewController: UITableViewDataSource {
         configure(cell, for: row, at: indexPath)
 
         return cell
+    }
+
+    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
+        .none // Don't show the default red delete button
+    }
+
+    func tableView(_ tableView: UITableView, shouldIndentWhileEditingRowAt indexPath: IndexPath) -> Bool {
+        false // Don't indent content
+    }
+
+    func tableView(_ tableView: UITableView,
+                   targetIndexPathForMoveFromRowAt sourceIndexPath: IndexPath,
+                   toProposedIndexPath proposedDestinationIndexPath: IndexPath) -> IndexPath {
+        // Constraint reorder destination to sections that support it.
+        let proposedSection = viewModel.sections[proposedDestinationIndexPath.section]
+        guard proposedSection.allowsReorder else {
+            return sourceIndexPath
+        }
+        return proposedDestinationIndexPath
+    }
+
+    func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+        // Only allow reorder if the section allows it.
+        let section = viewModel.sections[indexPath.section]
+        return section.allowsReorder
+    }
+
+    func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        viewModel.reorderOptionOffered(fromIndex: sourceIndexPath.row, toIndex: destinationIndexPath.row)
     }
 }
 
@@ -138,15 +199,15 @@ private extension AddAttributeOptionsViewController {
     /// Cells currently configured in the order they appear on screen
     ///
     func configure(_ cell: UITableViewCell, for row: Row, at indexPath: IndexPath) {
-        switch cell {
-        case let cell as TextFieldTableViewCell where row == .termTextField:
+        switch (row, cell) {
+        case (.optionTextField, let cell as TextFieldTableViewCell):
             configureTextField(cell: cell)
-        case let cell as BasicTableViewCell where row == .selectedTerms:
-            configureOption(cell: cell)
-        case let cell as BasicTableViewCell where row == .existingTerms:
-            configureOption(cell: cell)
+        case (let .selectedOptions(name), let cell as BasicTableViewCell):
+            configureOptionOffered(cell: cell, text: name, index: indexPath.row)
+        case (let .existingOptions(name), let cell as BasicTableViewCell):
+            configureOptionAdded(cell: cell, text: name)
         default:
-            fatalError()
+            fatalError("Unsupported Cell")
             break
         }
     }
@@ -154,16 +215,55 @@ private extension AddAttributeOptionsViewController {
     func configureTextField(cell: TextFieldTableViewCell) {
         let viewModel = TextFieldTableViewCell.ViewModel(text: nil,
                                                          placeholder: Localization.optionNameCellPlaceholder,
-                                                         onTextChange: { newAttributeOption in
-
-            }, onTextDidBeginEditing: {
-        }, inputFormatter: nil, keyboardType: .default)
+                                                         onTextChange: nil,
+                                                         onTextDidBeginEditing: nil,
+                                                         onTextDidReturn: { [weak self] text in
+                                                            if let text = text {
+                                                                self?.viewModel.addNewOption(name: text)
+                                                            }
+                                                         }, inputFormatter: nil,
+                                                         keyboardType: .default)
         cell.configure(viewModel: viewModel)
         cell.applyStyle(style: .body)
     }
 
-    func configureOption(cell: BasicTableViewCell) {
-        cell.textLabel?.text = "Work in progress" //TODO: to be implemented
+    func configureOptionOffered(cell: BasicTableViewCell, text: String, index: Int) {
+        cell.imageView?.tintColor = .tertiaryLabel
+        cell.imageView?.image = UIImage.deleteCellImage
+        cell.textLabel?.text = text
+
+        // Listen to taps on the cell's image view
+        let tapRecognizer = UITapGestureRecognizer()
+        tapRecognizer.on { [weak self] _ in
+            self?.viewModel.removeOptionOffered(atIndex: index)
+        }
+        cell.imageView?.addGestureRecognizer(tapRecognizer)
+        cell.imageView?.isUserInteractionEnabled = true
+    }
+
+    func configureOptionAdded(cell: BasicTableViewCell, text: String) {
+        cell.textLabel?.text = text
+    }
+}
+
+// MARK: - Placeholders
+//
+private extension AddAttributeOptionsViewController {
+    /// Renders ghost placeholder while options are being synched.
+    ///
+    func displayGhostTableView() {
+        let options = GhostOptions(displaysSectionHeader: false,
+                                   reuseIdentifier: WooBasicTableViewCell.reuseIdentifier,
+                                   rowsPerSection: [3])
+        ghostTableView.displayGhostContent(options: options, style: .wooDefaultGhostStyle)
+        ghostTableView.isHidden = false
+    }
+
+    /// Removes ghost placeholder
+    ///
+    func removeGhostTableView() {
+        ghostTableView.removeGhostContent()
+        ghostTableView.isHidden = true
     }
 }
 
@@ -199,18 +299,19 @@ extension AddAttributeOptionsViewController {
         let header: String?
         let footer: String?
         let rows: [Row]
+        let allowsReorder: Bool
     }
 
-    enum Row: CaseIterable {
-        case termTextField
-        case selectedTerms
-        case existingTerms
+    enum Row: Equatable {
+        case optionTextField
+        case selectedOptions(name: String)
+        case existingOptions(name: String)
 
         fileprivate var type: UITableViewCell.Type {
             switch self {
-            case .termTextField:
+            case .optionTextField:
                 return TextFieldTableViewCell.self
-            case .selectedTerms, .existingTerms:
+            case .selectedOptions, .existingOptions:
                 return BasicTableViewCell.self
             }
         }

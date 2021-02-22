@@ -1,11 +1,5 @@
-WooCommerce se réjouit d’annoncer les dernières mises à jour de son application mobile.
+Nouveauté de la version 6.0
 
-Actualisation : Admettons qu’un utilisateur applique des paramètres de tri et/ou des filtres sur la liste de produits de votre magasin. Il est fort probable qu’en revenant dans l’application, il préférera éviter d’effectuer de nouveau l’opération. Aucun problème ! Désormais, lorsqu’un utilisateur rouvre l’application, les paramètres appliqués précédemment restent en vigueur.
+Nous vous avons écouté ! Suite à une demande récurrente, l’UGS du produit apparaît également dans l’écran Détails de la commande.
 
-Regroupement : L’écran d’exécution proprement dit n’existe plus ; les informations sur l’exécution se trouvent désormais sur l’écran des détails de la commande, comme c’était déjà le cas pour les frais.
-
-Adieu les bugs : Nous avons résolu plusieurs problèmes techniques, par exemple :
-
-- Les feuilles d’action reprenant les informations de facturation s’affichent désormais correctement sur les iPads.
-- Les lignes dans les listes de recherche de produits ne comportent plus de double séparateurs.
-- Les compteurs de chargement sur les boutons « continuer » sont désormais visibles en mode sombre.
+Nous avons également apporté diverses améliorations, dont la prise en charge du tri par glisser-déposer des produits liés, la résolution de problèmes de cohérence dans les statistiques relatives aux visiteurs dans votre tableau de bord et l’affichage des produits les plus performants dans votre onglet « Cette semaine ». Nous avons également réduit le risque de défaillance lors de la mise à jour de l’application.

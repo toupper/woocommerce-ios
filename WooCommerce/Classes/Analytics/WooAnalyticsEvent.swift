@@ -1,4 +1,5 @@
 import Foundation
+import Yosemite
 
 /// This struct represents an analytics event. It is a combination of `WooAnalyticsStat` and
 /// its properties.
@@ -39,7 +40,7 @@ import Foundation
 ///
 public struct WooAnalyticsEvent {
     let statName: WooAnalyticsStat
-    let properties: [String: String]
+    let properties: [String: WooAnalyticsEventPropertyType]
 }
 
 // MARK: - In-app Feedback and Survey
@@ -84,9 +85,18 @@ extension WooAnalyticsEvent {
     }
 
     /// The result of a shipping labels API GET request.
-    public enum ShippingLabelsAPIRequestResult: String {
+    public enum ShippingLabelsAPIRequestResult {
         case success
-        case failed
+        case failed(error: Error)
+
+        fileprivate var rawValue: String {
+            switch self {
+            case .success:
+                return "success"
+            case .failed:
+                return "failed"
+            }
+        }
     }
 
     static func appFeedbackPrompt(action: AppFeedbackPromptAction) -> WooAnalyticsEvent {
@@ -106,7 +116,23 @@ extension WooAnalyticsEvent {
     }
 
     static func shippingLabelsAPIRequest(result: ShippingLabelsAPIRequestResult) -> WooAnalyticsEvent {
-        WooAnalyticsEvent(statName: .shippingLabelsAPIRequest, properties: ["action": result.rawValue])
+        switch result {
+        case .success:
+            return WooAnalyticsEvent(statName: .shippingLabelsAPIRequest, properties: ["action": result.rawValue])
+        case .failed(let error):
+            return WooAnalyticsEvent(statName: .shippingLabelsAPIRequest, properties: [
+                "action": result.rawValue,
+                "error": error.localizedDescription
+            ])
+        }
+    }
+
+    static func ordersListLoaded(totalDuration: TimeInterval, pageNumber: Int, status: OrderStatus?) -> WooAnalyticsEvent {
+        WooAnalyticsEvent(statName: .ordersListLoaded, properties: [
+            "status": status?.slug ?? String(),
+            "page_number": Int64(pageNumber),
+            "total_duration": Double(totalDuration)
+        ])
     }
 }
 

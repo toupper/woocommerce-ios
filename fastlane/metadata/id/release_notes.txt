@@ -1,5 +1,5 @@
-Apa yang baru di rilis 6.0 kami?
+Kami senang bisa mengumumkan pembaruan untuk aplikasi iOS WooCommerce. 
 
-Anda meminta, kami menyediakannya! Karena banyaknya permintaan, SKU produk akan ditampilkan sekali lagi pada layar Detail Pesanan.
-
-Kami juga melakukan berbagai peningkatan, antara lain dukungan untuk pengurutan dengan seret dan lepas pada Produk Tertaut, perbaikan konsistensi pada statistik pelanggan di dasbor dan produk dengan performa tertinggi di tab "Minggu ini", dan peningkatan yang mengurangi risiko masalah crash saat Anda memperbarui aplikasi.
+Sekarang penyuntingan atribut produk variabel bisa lebih mudah dilakukan, misalnya untuk warna dan ukuran pakaian.
+Kami telah memperbaiki bug yang memengaruhi tombol "Kembali" dan tampilan gambar mini produk.
+Selain itu, untuk item yang sesuai dengan deskripsi, detail jenis produk kini menyertakan keterangan "Dapat Diunduh".

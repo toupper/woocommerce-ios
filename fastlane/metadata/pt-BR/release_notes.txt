@@ -1,5 +1,5 @@
-Novidades da versão 6.0.
+Estamos ansiosos para anunciar atualizações no aplicativo iOS do WooCommerce.
 
-Você pediu, nós atendemos! Devido a inúmeros pedidos, o SKU do produto é exibido mais uma vez na tela de Detalhes do pedido.
-
-Também fizemos várias melhorias, incluindo suporte para classificação com arraste e solte para os Produtos vinculados, correções de consistência para estatísticas de visitantes no painel e melhor desempenho na guia “Esta semana”, além de uma melhoria que reduz o risco de travamentos ao atualizar o aplicativo.
+Agora é mais fácil do que nunca editar os atributos dos produtos variáveis, por exemplo, a cor e o tamanho das roupas.
+Corrigimos bugs que afetavam o botão "Voltar" e a exibição das miniaturas dos produtos. 
+Além disso, os detalhes do tipo de produto agora incluem "Disponível para download" para itens que se encaixam na descrição.

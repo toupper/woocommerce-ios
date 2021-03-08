@@ -88,8 +88,8 @@ private extension DefaultProductFormTableViewModel {
                 return .groupedProducts(viewModel: groupedProductsRow(product: product.product, isEditable: editable), isEditable: editable)
             case .variations:
                 return .variations(viewModel: variationsRow(product: product.product))
-            case .downloadableFiles:
-                return .downloadableFiles(viewModel: downloadsRow(product: product))
+            case .downloadableFiles(let editable):
+                return .downloadableFiles(viewModel: downloadsRow(product: product, isEditable: editable), isEditable: editable)
             case .linkedProducts(let editable):
                 return .linkedProducts(viewModel: linkedProductsRow(product: product, isEditable: editable), isEditable: editable)
             default:
@@ -227,10 +227,12 @@ private extension DefaultProductFormTableViewModel {
         let details: String
         switch product.productType {
         case .simple:
-            switch product.virtual {
-            case true:
+            switch (product.downloadable, product.virtual) {
+            case (true, _):
+                details = Localization.downloadableProductType
+            case (false, true):
                 details = Localization.virtualProductType
-            case false:
+            case (false, false):
                 details = Localization.physicalProductType
             }
         case .custom(let customProductType):
@@ -428,7 +430,7 @@ private extension DefaultProductFormTableViewModel {
 
     // MARK: Product downloads only
 
-    func downloadsRow(product: ProductFormDataModel) -> ProductFormSection.SettingsRow.ViewModel {
+    func downloadsRow(product: ProductFormDataModel, isEditable: Bool) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.cloudImage
         let title = Localization.downloadsTitle
         var details = Localization.emptyDownloads
@@ -444,7 +446,8 @@ private extension DefaultProductFormTableViewModel {
 
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
-                                                        details: details)
+                                                        details: details,
+                                                        isActionable: isEditable)
     }
 
     // MARK: Linked products only
@@ -525,6 +528,8 @@ private extension DefaultProductFormTableViewModel {
                                                            comment: "Format of the stock quantity on the Inventory Settings row")
 
         // Product Type
+        static let downloadableProductType = NSLocalizedString("Downloadable",
+                                                               comment: "Display label for simple downloadable product type.")
         static let virtualProductType = NSLocalizedString("Virtual",
                                                           comment: "Display label for simple virtual product type.")
         static let physicalProductType = NSLocalizedString("Physical",

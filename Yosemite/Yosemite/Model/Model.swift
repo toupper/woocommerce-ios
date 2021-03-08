@@ -12,6 +12,7 @@ public typealias Address = Networking.Address
 public typealias APNSDevice = Networking.APNSDevice
 public typealias CommentStatus = Networking.CommentStatus
 public typealias Credentials = Networking.Credentials
+public typealias CreateProductVariation = Networking.CreateProductVariation
 public typealias DotcomDevice = Networking.DotcomDevice
 public typealias Leaderboard = Networking.Leaderboard
 public typealias LeaderboardRow = Networking.LeaderboardRow
@@ -70,6 +71,9 @@ public typealias ShipmentTrackingProvider = Networking.ShipmentTrackingProvider
 public typealias ShipmentTrackingProviderGroup = Networking.ShipmentTrackingProviderGroup
 public typealias ShippingLabel = Networking.ShippingLabel
 public typealias ShippingLabelAddress = Networking.ShippingLabelAddress
+public typealias ShippingLabelAddressVerification = Networking.ShippingLabelAddressVerification
+public typealias ShipType = Networking.ShippingLabelAddressVerification.ShipType
+public typealias ShippingLabelAddressValidationResponse = Networking.ShippingLabelAddressValidationResponse
 public typealias ShippingLabelPaperSize = Networking.ShippingLabelPaperSize
 public typealias ShippingLabelPrintData = Networking.ShippingLabelPrintData
 public typealias ShippingLabelRefund = Networking.ShippingLabelRefund
@@ -93,6 +97,7 @@ public typealias StoredProductSettings = Networking.StoredProductSettings
 // MARK: - Exported Storage Symbols
 
 public typealias StorageAccount = Storage.Account
+public typealias StorageAccountSettings = Storage.AccountSettings
 public typealias StorageAttribute = Storage.GenericAttribute
 public typealias StorageNote = Storage.Note
 public typealias StorageOrder = Storage.Order

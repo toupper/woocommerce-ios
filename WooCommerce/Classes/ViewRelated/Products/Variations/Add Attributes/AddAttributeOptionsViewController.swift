@@ -9,16 +9,28 @@ final class AddAttributeOptionsViewController: UIViewController {
 
     private let viewModel: AddAttributeOptionsViewModel
 
+    private let noticePresenter: NoticePresenter
+
+    /// Closure to be invoked(with the updated product)  when the update/create attribute operation finishes successfully.
+    ///
+    private let onCompletion: (Product) -> Void
+
     /// Keyboard management
     ///
     private lazy var keyboardFrameObserver: KeyboardFrameObserver = KeyboardFrameObserver { [weak self] keyboardFrame in
         self?.handleKeyboardFrameUpdate(keyboardFrame: keyboardFrame)
     }
 
-    /// Init
+    /// Initializer for `AddAttributeOptionsViewController`
     ///
-    init(viewModel: AddAttributeOptionsViewModel) {
+    /// - Parameters:
+    ///   - onCompletion: Closure to be invoked(with the updated product)  when the update/create attribute operation finishes successfully.
+    init(viewModel: AddAttributeOptionsViewModel,
+         noticePresenter: NoticePresenter = ServiceLocator.noticePresenter,
+         onCompletion: @escaping (Product) -> Void) {
         self.viewModel = viewModel
+        self.noticePresenter = noticePresenter
+        self.onCompletion = onCompletion
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -45,11 +57,25 @@ final class AddAttributeOptionsViewController: UIViewController {
 private extension AddAttributeOptionsViewController {
 
     func configureNavigationBar() {
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: Localization.nextNavBarButton,
-                                                           style: .plain,
-                                                           target: self,
-                                                           action: #selector(doneButtonPressed))
         removeNavigationBackBarButtonText()
+    }
+
+    func configureRightButtonItem() {
+        // The update indicator has precedence over the next button
+        if viewModel.showUpdateIndicator {
+            let indicator = UIActivityIndicatorView(style: .medium)
+            indicator.color = .primaryButtonTitle
+            indicator.startAnimating()
+            navigationItem.rightBarButtonItem = UIBarButtonItem(customView: indicator)
+            return
+        }
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: Localization.nextNavBarButton,
+                                                            style: .plain,
+                                                            target: self,
+                                                            action: #selector(nextButtonPressed))
+        navigationItem.rightBarButtonItem?.isEnabled = viewModel.isNextButtonEnabled
+
     }
 
     func configureMainView() {
@@ -64,6 +90,7 @@ private extension AddAttributeOptionsViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.isEditing = true
+        tableView.allowsSelectionDuringEditing = true
     }
 
     func configureGhostTableView() {
@@ -95,7 +122,7 @@ private extension AddAttributeOptionsViewController {
 
     func renderViewModel() {
         title = viewModel.titleView
-        navigationItem.rightBarButtonItem?.isEnabled = viewModel.isNextButtonEnabled
+        configureRightButtonItem()
         tableView.reloadData()
 
         if viewModel.showGhostTableView {
@@ -152,7 +179,7 @@ extension AddAttributeOptionsViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-        viewModel.reorderOptionOffered(fromIndex: sourceIndexPath.row, toIndex: destinationIndexPath.row)
+        viewModel.reorderSelectedOptions(fromIndex: sourceIndexPath.row, toIndex: destinationIndexPath.row)
     }
 }
 
@@ -160,7 +187,10 @@ extension AddAttributeOptionsViewController: UITableViewDataSource {
 //
 extension AddAttributeOptionsViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
+        guard viewModel.sections[indexPath.section].allowsSelection else {
+            return
+        }
+        viewModel.selectExistingOption(atIndex: indexPath.row)
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
@@ -221,6 +251,7 @@ private extension AddAttributeOptionsViewController {
                                                             if let text = text {
                                                                 self?.viewModel.addNewOption(name: text)
                                                             }
+
                                                          }, inputFormatter: nil,
                                                          keyboardType: .default)
         cell.configure(viewModel: viewModel)
@@ -235,7 +266,7 @@ private extension AddAttributeOptionsViewController {
         // Listen to taps on the cell's image view
         let tapRecognizer = UITapGestureRecognizer()
         tapRecognizer.on { [weak self] _ in
-            self?.viewModel.removeOptionOffered(atIndex: index)
+            self?.viewModel.removeSelectedOption(atIndex: index)
         }
         cell.imageView?.addGestureRecognizer(tapRecognizer)
         cell.imageView?.isUserInteractionEnabled = true
@@ -243,6 +274,8 @@ private extension AddAttributeOptionsViewController {
 
     func configureOptionAdded(cell: BasicTableViewCell, text: String) {
         cell.textLabel?.text = text
+        cell.imageView?.image = nil
+        cell.imageView?.isUserInteractionEnabled = false
     }
 }
 
@@ -288,8 +321,17 @@ extension AddAttributeOptionsViewController: KeyboardScrollable {
 //
 extension AddAttributeOptionsViewController {
 
-    @objc private func doneButtonPressed() {
-        // TODO: to be implemented
+    @objc private func nextButtonPressed() {
+        viewModel.updateProductAttributes { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case let .success(product):
+                self.onCompletion(product)
+            case let .failure(error):
+                self.noticePresenter.enqueue(notice: .init(title: Localization.updateAttributeError, feedbackType: .error))
+                DDLogError(error.localizedDescription)
+            }
+        }
     }
 }
 
@@ -300,6 +342,7 @@ extension AddAttributeOptionsViewController {
         let footer: String?
         let rows: [Row]
         let allowsReorder: Bool
+        let allowsSelection: Bool
     }
 
     enum Row: Equatable {
@@ -327,5 +370,7 @@ private extension AddAttributeOptionsViewController {
         static let nextNavBarButton = NSLocalizedString("Next", comment: "Next nav bar button title in Add Product Attribute Options screen")
         static let optionNameCellPlaceholder = NSLocalizedString("Option name",
                                                             comment: "Placeholder of cell presenting the title of the new attribute option.")
+        static let updateAttributeError = NSLocalizedString("The attribute couldn't be saved.",
+                                                            comment: "Error title when trying to update or create an attribute remotely.")
     }
 }

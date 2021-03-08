@@ -22,7 +22,7 @@ enum FeatureFlag: Int {
     ///
     case reviews
 
-    /// Shipping labels - release 1
+    /// Shipping labels - release 2
     ///
-    case shippingLabelsRelease1
+    case shippingLabelsRelease2
 }

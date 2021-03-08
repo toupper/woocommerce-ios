@@ -1,5 +1,5 @@
-6.0 sürümümüzdeki yenilikler nelerdir?
+WooCommerce iOS uygulamasıyla ilgili güncellemeleri duyurmaktan heyecan duyuyoruz.
 
-Siz istediniz, biz yaptık! Yaygın talepten dolayı ürün SKU'su Sipariş Ayrıntıları ekranında yeniden görüntüleniyor.
-
-Ayrıca Bağlantılı Ürünlere sürükleyip bırakarak sıralama desteği, yönetim panelinizdeki ziyaretçi istatistikleri ile "Bu Hafta" sekmenizdeki en iyi performans gösteren ürünlere yönelik tutarlılık açısından düzeltmeler ve uygulamayı güncellerken meydana gelen kilitlenme riskini azaltan bir iyileştirme de dahil olmak üzere çeşitli iyileştirmeler yaptık.
+Değişken ürünlerin niteliklerini (örneğin, giysinin rengi ve bedeni) düzenlemek artık her zamankinden daha kolay.
+"Geri" düğmesini ve ürün küçük resimlerinin görüntülenmesini etkileyen hatalar düzeltildi.
+Ayrıca açıklamaya uyan ürünler için ürün türü ayrıntılarında artık "İndirilebilir" öğesi de bulunuyor.

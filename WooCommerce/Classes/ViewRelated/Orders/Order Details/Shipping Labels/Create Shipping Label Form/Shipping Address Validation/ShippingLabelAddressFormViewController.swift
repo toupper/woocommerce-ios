@@ -6,7 +6,29 @@ final class ShippingLabelAddressFormViewController: UIViewController {
     @IBOutlet private weak var tableView: UITableView!
     @IBOutlet private weak var confirmButton: UIButton!
 
+    /// Stack view that contains the top warning banner and is contained in the table view header.
+    ///
+    private lazy var topStackView: UIStackView = {
+        let stackView = UIStackView(arrangedSubviews: [])
+        stackView.axis = .vertical
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        return stackView
+    }()
+
+    /// Top banner that shows a warning in case there is an error in the address validation.
+    ///
+    private lazy var topBannerView: TopBannerView = {
+        let topBanner = ShippingLabelAddressTopBannerFactory.addressErrorTopBannerView()
+        topBanner.translatesAutoresizingMaskIntoConstraints = false
+        return topBanner
+    }()
+
     private let viewModel: ShippingLabelAddressFormViewModel
+
+    /// Completion callback
+    ///
+    typealias Completion = (_ address: ShippingLabelAddress?) -> Void
+    private let onCompletion: Completion
 
     /// Needed to scroll content to a visible area when the keyboard appears.
     ///
@@ -16,8 +38,9 @@ final class ShippingLabelAddressFormViewController: UIViewController {
 
     /// Init
     ///
-    init(type: ShipType, address: ShippingLabelAddress?) {
-        viewModel = ShippingLabelAddressFormViewModel(type: type, address: address)
+    init(siteID: Int64, type: ShipType, address: ShippingLabelAddress?, completion: @escaping Completion) {
+        viewModel = ShippingLabelAddressFormViewModel(siteID: siteID, type: type, address: address)
+        onCompletion = completion
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -30,6 +53,7 @@ final class ShippingLabelAddressFormViewController: UIViewController {
         configureNavigationBar()
         configureMainView()
         configureTableView()
+        observeViewModel()
         configureConfirmButton()
         keyboardFrameObserver.startObservingKeyboardFrame(sendInitialEvent: true)
     }
@@ -42,6 +66,22 @@ private extension ShippingLabelAddressFormViewController {
     func configureNavigationBar() {
         title = viewModel.type == .origin ? Localization.titleViewShipFrom : Localization.titleViewShipTo
         removeNavigationBackBarButtonText()
+        if viewModel.showLoadingIndicator {
+            configureRightButtonItemAsLoader()
+        } else {
+            configureRightBarButtonItemAsDone()
+        }
+    }
+
+    func configureRightBarButtonItemAsDone() {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneButtonTapped))
+    }
+
+    func configureRightButtonItemAsLoader() {
+        let indicator = UIActivityIndicatorView(style: .medium)
+        indicator.color = .primaryButtonTitle
+        indicator.startAnimating()
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: indicator)
     }
 
     func configureMainView() {
@@ -57,6 +97,14 @@ private extension ShippingLabelAddressFormViewController {
         registerTableViewCells()
 
         tableView.dataSource = self
+
+        // Configure header container view
+        let headerContainer = UIView(frame: CGRect(x: 0, y: 0, width: Int(tableView.frame.width), height: 0))
+        headerContainer.addSubview(topStackView)
+        headerContainer.pinSubviewToSafeArea(topStackView)
+        topStackView.addArrangedSubview(topBannerView)
+
+        tableView.tableHeaderView = headerContainer
     }
 
     func registerTableViewCells() {
@@ -65,11 +113,44 @@ private extension ShippingLabelAddressFormViewController {
         }
     }
 
+    func observeViewModel() {
+        viewModel.onChange = { [weak self] in
+            guard let self = self else { return }
+            self.configureNavigationBar()
+            self.updateTopBannerView()
+            self.tableView.reloadData()
+        }
+    }
+
+    func updateTopBannerView() {
+        topBannerView.isHidden = !viewModel.shouldShowTopBannerView
+        tableView.updateHeaderHeight()
+    }
+
     func configureConfirmButton() {
         confirmButton.setTitle(Localization.confirmButtonTitle, for: .normal)
-        // TODO: implement confirm button action
-        //confirmButton.addTarget(self, action: #selector(addTapped), for: .touchUpInside)
+        confirmButton.addTarget(self, action: #selector(confirmButtonTapped), for: .touchUpInside)
         confirmButton.applySecondaryButtonStyle()
+    }
+}
+
+// MARK: - Actions
+//
+private extension ShippingLabelAddressFormViewController {
+
+    @objc func doneButtonTapped() {
+        viewModel.validateAddress { [weak self] (success, error) in
+            guard let self = self else { return }
+            if success {
+                self.onCompletion(self.viewModel.address)
+                self.navigationController?.popViewController(animated: true)
+            }
+        }
+    }
+
+    @objc func confirmButtonTapped() {
+        onCompletion(viewModel.address)
+        navigationController?.popViewController(animated: true)
     }
 }
 
@@ -111,6 +192,8 @@ private extension ShippingLabelAddressFormViewController {
             configureAddress(cell: cell, row: row)
         case let cell as TitleAndTextFieldTableViewCell where row == .address2:
             configureAddress2(cell: cell, row: row)
+        case let cell as BasicTableViewCell where row == .fieldError:
+            configureFieldError(cell: cell, row: row)
         case let cell as TitleAndTextFieldTableViewCell where row == .city:
             configureCity(cell: cell, row: row)
         case let cell as TitleAndTextFieldTableViewCell where row == .postcode:
@@ -131,8 +214,8 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.nameFieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -143,8 +226,8 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.companyFieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -154,21 +237,22 @@ private extension ShippingLabelAddressFormViewController {
                                                                      text: viewModel.address?.phone,
                                                                      placeholder: Localization.phoneFieldPlaceholder,
                                                                      state: .normal,
-                                                                     keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     keyboardType: .phonePad,
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
 
     func configureAddress(cell: TitleAndTextFieldTableViewCell, row: Row) {
+        let state: TitleAndTextFieldTableViewCell.ViewModel.State = viewModel.addressValidationError?.addressError == nil ? .normal : .error
         let cellViewModel = TitleAndTextFieldTableViewCell.ViewModel(title: Localization.addressField,
                                                                      text: viewModel.address?.address1,
                                                                      placeholder: Localization.addressFieldPlaceholder,
-                                                                     state: .normal,
+                                                                     state: state,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -179,10 +263,16 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.address2FieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
+    }
+
+    func configureFieldError(cell: BasicTableViewCell, row: Row) {
+        cell.textLabel?.text = viewModel.addressValidationError?.addressError
+        cell.textLabel?.textColor = .error
+        cell.backgroundColor = .listBackground
     }
 
     func configureCity(cell: TitleAndTextFieldTableViewCell, row: Row) {
@@ -191,8 +281,8 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.cityFieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -202,9 +292,9 @@ private extension ShippingLabelAddressFormViewController {
                                                                      text: viewModel.address?.postcode,
                                                                      placeholder: Localization.postcodeFieldPlaceholder,
                                                                      state: .normal,
-                                                                     keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     keyboardType: .phonePad,
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -215,8 +305,8 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.stateFieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -227,8 +317,8 @@ private extension ShippingLabelAddressFormViewController {
                                                                      placeholder: Localization.countryFieldPlaceholder,
                                                                      state: .normal,
                                                                      keyboardType: .default,
-                                                                     textFieldAlignment: .leading) { (newText) in
-
+                                                                     textFieldAlignment: .leading) { [weak self] (newText) in
+            self?.viewModel.handleAddressValueChanges(row: row, newValue: newText)
         }
         cell.configure(viewModel: cellViewModel)
     }
@@ -248,8 +338,6 @@ extension ShippingLabelAddressFormViewController {
     }
 
     enum Row: CaseIterable {
-        case topBanner
-
         case name
         case company
         case phone
@@ -264,7 +352,7 @@ extension ShippingLabelAddressFormViewController {
 
         fileprivate var type: UITableViewCell.Type {
             switch self {
-            case .topBanner, .fieldError:
+            case .fieldError:
                 return BasicTableViewCell.self
             case .name, .company, .phone, .address, .address2, .city, .postcode, .state, .country:
                 return TitleAndTextFieldTableViewCell.self
@@ -303,5 +391,9 @@ private extension ShippingLabelAddressFormViewController {
 
         static let confirmButtonTitle = NSLocalizedString("Use Address as Entered",
                                                           comment: "Action to use the address in Shipping Label Validation screen as entered")
+    }
+
+    enum Constants {
+        static let headerContainerInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
     }
 }

@@ -26,6 +26,14 @@ final class AddAttributeOptionsViewModel {
             case global(option: ProductAttributeTerm)
         }
 
+        /// Possible states for syncing global attribute options
+        ///
+        enum SyncState {
+            case idle
+            case loading
+            case failed
+        }
+
         /// Stores the options to be offered
         ///
         var selectedOptions: [Option] = []
@@ -34,36 +42,37 @@ final class AddAttributeOptionsViewModel {
         ///
         var existingOptions: [Option] = []
 
-        /// Indicates if the view model is syncing a global attribute options
+        /// Indicates synchronization state for global attribute options
         ///
-        var isSyncing: Bool = false
+        var syncState: SyncState = .idle
 
         /// Indicates if the view model is updating the product's attributes
         ///
         var isUpdating: Bool = false
-    }
 
-    /// Title of the navigation bar
-    ///
-    var titleView: String? {
-        switch attribute {
-        case .new(let name):
-            return name
-        case .existing(let attribute):
-            return attribute.name
-        }
+        /// Name of the attribute
+        ///
+        var currentAttributeName: String = ""
     }
 
     /// Defines next button visibility
     ///
     var isNextButtonEnabled: Bool {
-        state.selectedOptions.isNotEmpty
+        let optionsToSubmit = state.selectedOptions.map { $0.name }
+        let attributeHasChanges = state.currentAttributeName != attribute.name || optionsToSubmit != attribute.previouslySelectedOptions
+        return attributeHasChanges && state.selectedOptions.isNotEmpty
+    }
+
+    /// Defines the more(...) button visibility
+    ///
+    var showMoreButton: Bool {
+        allowsEditing
     }
 
     /// Defines ghost cells visibility
     ///
     var showGhostTableView: Bool {
-        state.isSyncing
+        state.syncState == .loading
     }
 
     /// Defines if the update indicator should be shown
@@ -72,17 +81,38 @@ final class AddAttributeOptionsViewModel {
         state.isUpdating
     }
 
+    /// Defines if the error state should be shown
+    ///
+    var showSyncError: Bool {
+        state.syncState == .failed
+    }
+
+    /// Defines if the attribute can be renamed (existing local attributes only)
+    ///
+    var allowsRename: Bool {
+        switch attribute {
+        case .new:
+            return false
+        case let .existing(productAttribute):
+            return productAttribute.isLocal
+        }
+    }
+
     /// Closure to notify the `ViewController` when the view model properties change.
     ///
     var onChange: (() -> (Void))?
 
     /// Main product dependency.
     ///
-    private let product: Product
+    let product: Product
 
     /// Main attribute dependency.
     ///
     private let attribute: Attribute
+
+    /// Main allows editing dependency.
+    ///
+    private let allowsEditing: Bool
 
     /// When an attribute exists, returns an already configured `ResultsController`
     /// When there isn't an existing attribute, returns a dummy/un-initialized `ResultsController`
@@ -124,24 +154,41 @@ final class AddAttributeOptionsViewModel {
     ///
     private let viewStorage: StorageManagerType
 
+    /// For tracking attribute creation
+    ///
+    private let analytics: Analytics
+
     init(product: Product,
          attribute: Attribute,
+         allowsEditing: Bool = false,
          stores: StoresManager = ServiceLocator.stores,
-         viewStorage: StorageManagerType = ServiceLocator.storageManager) {
+         viewStorage: StorageManagerType = ServiceLocator.storageManager,
+         analytics: Analytics = ServiceLocator.analytics) {
         self.product = product
         self.attribute = attribute
+        self.state.currentAttributeName = attribute.name
+        self.allowsEditing = allowsEditing
         self.stores = stores
         self.viewStorage = viewStorage
+        self.analytics = analytics
 
+        synchronizeOptions()
+    }
+
+    /// Updates all options based on attribute type.
+    /// For global attribute remote sync will be triggered.
+    ///
+    func synchronizeOptions() {
         switch attribute {
         case .new:
             updateSections()
-        case let .existing(attribute) where attribute.isGlobal:
-            synchronizeGlobalOptions(of: attribute)
-        case let .existing(attribute) where attribute.isLocal:
-            populateLocalOptions(of: attribute)
-        default:
-            break
+        case let .existing(attribute):
+            preselectCurrentOptions(of: attribute)
+            if attribute.isGlobal {
+                synchronizeGlobalOptions(of: attribute)
+            } else {
+                populateLocalOptions(of: attribute)
+            }
         }
     }
 }
@@ -186,37 +233,94 @@ extension AddAttributeOptionsViewModel {
         addNewOption(name: option.name)
     }
 
+    /// Sets the current attribute name to a new name
+    ///
+    func setCurrentAttributeName(_ newName: String) {
+        state.currentAttributeName = newName
+    }
+
+    /// Gets the current attribute name
+    ///
+    var getCurrentAttributeName: String {
+        state.currentAttributeName
+    }
+
     /// Gathers selected options and update the product's attributes
     ///
     func updateProductAttributes(onCompletion: @escaping ((Result<Product, ProductUpdateError>) -> Void)) {
-        state.isUpdating = true
         let newProduct = createUpdatedProduct()
+        performProductUpdate(newProduct, onCompletion: onCompletion)
+    }
+
+    /// Updates the product remotely by removing the current attribute
+    ///
+    func removeCurrentAttribute(onCompletion: @escaping ((Result<Product, ProductUpdateError>) -> Void)) {
+        let newProduct = createProductByRemovingCurrentAttribute()
+        performProductUpdate(newProduct, onCompletion: onCompletion)
+    }
+
+    /// Update the given product remotely.
+    ///
+    private func performProductUpdate(_ newProduct: Product, onCompletion: @escaping ((Result<Product, ProductUpdateError>) -> Void)) {
+
+        // Track operation trigger
+        let startDate = Date()
+        analytics.track(event: WooAnalyticsEvent.Variations.updateAttribute(productID: product.productID))
+
+        state.isUpdating = true
         let action = ProductAction.updateProduct(product: newProduct) { [weak self] result in
             guard let self = self else { return }
             self.state.isUpdating = false
             onCompletion(result)
+
+            // Track operation result
+            let elapsedTime = Date().timeIntervalSince(startDate)
+            switch result {
+            case .success:
+                self.analytics.track(event: WooAnalyticsEvent.Variations.updateAttributeSuccess(productID: self.product.productID, time: elapsedTime))
+            case let .failure(error):
+                self.analytics.track(event: WooAnalyticsEvent.Variations.updateAttributeFail(productID: self.product.productID,
+                                                                                             time: elapsedTime,
+                                                                                             error: error))
+            }
         }
         stores.dispatch(action)
     }
 
-    /// Returns a product with its attributes updated with the new attribute to create.
+    /// Returns a product with its name and options updated with the new attribute to create.
     ///
     private func createUpdatedProduct() -> Product {
         let newOptions = state.selectedOptions.map { $0.name }
+        let newName = state.currentAttributeName
         let newAttribute = ProductAttribute(siteID: product.siteID,
                                             attributeID: attribute.attributeID,
-                                            name: attribute.name,
+                                            name: newName,
                                             position: 0,
                                             visible: true,
                                             variation: true,
                                             options: newOptions)
 
         // Here we remove any possible existing attribute with the same ID and Name. For then re-adding the new updated attribute
+        // Name has to be considered, because local attributes are zero-id based. We use `attribute` instead of `newAttribute` because
+        // the new Name may not match the old one that needs to be removed, if the attribute was renamed.
+        let updatedAttributes: [ProductAttribute] = {
+            var attributes = product.attributes
+            attributes.removeAll { $0.attributeID == attribute.attributeID && $0.name == attribute.name }
+            attributes.append(newAttribute)
+            return attributes
+        }()
+
+        return product.copy(attributes: updatedAttributes)
+    }
+
+    /// Returns a product with the current attribute removed.
+    ///
+    private func createProductByRemovingCurrentAttribute() -> Product {
+        // Remove the current attribute from the product attribute array.
         // Name has to be considered, because local attributes are zero-id based.
         let updatedAttributes: [ProductAttribute] = {
             var attributes = product.attributes
-            attributes.removeAll { $0.attributeID == newAttribute.attributeID && $0.name == newAttribute.name }
-            attributes.append(newAttribute)
+            attributes.removeAll { $0.attributeID == attribute.attributeID && $0.name == attribute.name }
             return attributes
         }()
 
@@ -249,7 +353,17 @@ private extension AddAttributeOptionsViewModel {
             AddAttributeOptionsViewModel.Row.selectedOptions(name: option.name)
         }
 
-        return Section(header: Localization.headerSelectedOptions, footer: nil, rows: rows, allowsReorder: true, allowsSelection: false)
+        // Only allow reorder for local attributes(existing and new)
+        let allowsReorder: Bool = {
+            switch attribute {
+            case .new:
+                return true
+            case let .existing(productAttribute):
+                return productAttribute.isLocal
+            }
+        }()
+
+        return Section(header: Localization.headerSelectedOptions, footer: nil, rows: rows, allowsReorder: allowsReorder, allowsSelection: false)
     }
 
     func createExistingSection() -> Section? {
@@ -265,19 +379,35 @@ private extension AddAttributeOptionsViewModel {
         return Section(header: Localization.headerExistingOptions, footer: nil, rows: rows, allowsReorder: false, allowsSelection: true)
     }
 
+    /// Pre-selects options of a product attribute.
+    ///
+    func preselectCurrentOptions(of attribute: ProductAttribute) {
+        state.selectedOptions = attribute.options.map { option in
+            .local(name: option)
+        }
+    }
+
     /// Synchronizes options for global attributes
     ///
     func synchronizeGlobalOptions(of attribute: ProductAttribute) {
         let fetchOptions = ProductAttributeTermAction.synchronizeProductAttributeTerms(siteID: attribute.siteID,
-                                                                                       attributeID: attribute.attributeID) { [weak self] _ in
+                                                                                       attributeID: attribute.attributeID) { [weak self] result in
             guard let self = self else { return }
-            self.state.existingOptions = self.existingOptionsResultsController.fetchedObjects.map { .global(option: $0) }
-            self.state.isSyncing = false
+            switch result {
+            case .success:
+                self.state.existingOptions = self.existingOptionsResultsController.fetchedObjects.map { .global(option: $0) }
+                self.state.syncState = .idle
+            case .failure(let error):
+                DDLogError(error.localizedDescription)
+                self.state.syncState = .failed
+            }
         }
-        state.isSyncing = true
+        state.syncState = .loading
         stores.dispatch(fetchOptions)
     }
 
+    /// Populates existing options for a local attribute.
+    ///
     func populateLocalOptions(of attribute: ProductAttribute) {
         state.existingOptions = attribute.options.map { option in
             .local(name: option)
@@ -338,6 +468,17 @@ private extension AddAttributeOptionsViewModel.Attribute {
             return name
         case let .existing(attribute):
             return attribute.name
+        }
+    }
+
+    /// Returns the previously selected options of an attribute. (ie: set when creating a variation)
+    ///
+    var previouslySelectedOptions: [String] {
+        switch self {
+        case .new:
+            return []
+        case let .existing(attribute):
+            return attribute.options
         }
     }
 }

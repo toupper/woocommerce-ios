@@ -61,6 +61,35 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.isNextButtonEnabled)
     }
 
+    func test_next_button_is_enabled_after_removing_preselected_options() {
+        // Given
+        let attribute = sampleAttribute(name: "Size", options: ["S", "M", "L"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+        XCTAssertFalse(viewModel.isNextButtonEnabled)
+
+        // When
+        viewModel.removeSelectedOption(atIndex: 2)
+
+        // Then
+        XCTAssertTrue(viewModel.isNextButtonEnabled)
+    }
+
+    func test_more_button_is_not_visible_when_editing_is_disabled() {
+        // Given, When
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .new(name: sampleAttributeName), allowsEditing: false)
+
+        // Then
+        XCTAssertFalse(viewModel.showMoreButton)
+    }
+
+    func test_more_button_is_visible_when_editing_is_enabled() {
+        // Given, When
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .new(name: sampleAttributeName), allowsEditing: true)
+
+        // Then
+        XCTAssertTrue(viewModel.showMoreButton)
+    }
+
     func test_empty_names_are_not_added_as_options() throws {
         // Given
         let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .new(name: sampleAttributeName))
@@ -207,6 +236,28 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
         }
     }
 
+    func test_failed_sync_options_of_existing_attribute_should_display_error_state() throws {
+        // Given
+        let stores = MockStoresManager(sessionManager: .testingInstance)
+        let rawError = NSError(domain: "Options Error", code: 1, userInfo: nil)
+        stores.whenReceivingAction(ofType: ProductAttributeTermAction.self) { action in
+            if case .synchronizeProductAttributeTerms(_, _, let onCompletion) = action {
+                DispatchQueue.main.async {
+                    onCompletion(.failure(.termsSynchronization(pageNumber: 0, rawError: rawError)))
+                }
+            }
+        }
+
+        // When
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: sampleAttribute()), stores: stores)
+        XCTAssertFalse(viewModel.showSyncError)
+
+        // Then
+        waitUntil {
+            viewModel.showSyncError
+        }
+    }
+
     func test_select_addedOption_moves_it_to_offeredSection_and_removes_it_from_addedSection() throws {
         // Given
         let storage = MockStorageManager()
@@ -324,9 +375,11 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
         }
 
         let initialAttribute = sampleAttribute()
-        let initialProduct = sampleProduct().copy(attributes: [initialAttribute])
+        let initialNonVarAttribute = sampleNonVariationAttribute()
+        let initialProduct = sampleProduct().copy(attributes: [initialAttribute, initialNonVarAttribute])
         let viewModel = AddAttributeOptionsViewModel(product: initialProduct, attribute: .existing(attribute: initialAttribute), stores: stores)
 
+        viewModel.setCurrentAttributeName("New Attribute Name")
         viewModel.addNewOption(name: "Option 1")
         viewModel.addNewOption(name: "Option 2")
 
@@ -343,8 +396,43 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
         }
 
         // Then
-        let expectedAttribute = sampleAttribute(options: ["Option 1", "Option 2"])
-        XCTAssertEqual(updatedProduct.attributes, [expectedAttribute])
+        let expectedAttribute = sampleAttribute(name: "New Attribute Name", options: ["Option 1", "Option 2"])
+        XCTAssertEqual(updatedProduct.attributes, [initialNonVarAttribute, expectedAttribute])
+    }
+
+    func test_removing_current_attribute_correctly_updates_product_attributes() throws {
+        // Given
+        let stores = MockStoresManager(sessionManager: .testingInstance)
+        stores.whenReceivingAction(ofType: ProductAction.self) { action in
+            switch action {
+            case let .updateProduct(product, onCompletion):
+                    onCompletion(.success(product))
+            default:
+                break
+            }
+        }
+
+        let attribute1 = sampleAttribute(name: "Color", options: ["Green", "Blue"])
+        let attribute2 = sampleAttribute(name: "Size", options: ["Large", "Small"])
+        let attribute3 = sampleNonVariationAttribute()
+        let initialProduct = sampleProduct().copy(attributes: [attribute1, attribute2, attribute3])
+        let viewModel = AddAttributeOptionsViewModel(product: initialProduct, attribute: .existing(attribute: attribute2), stores: stores)
+
+
+        // When
+        let updatedProduct: Product = waitFor { promise in
+            viewModel.removeCurrentAttribute { result in
+                switch result {
+                case .success(let product):
+                    promise(product)
+                case .failure:
+                    break
+                }
+            }
+        }
+
+        // Then
+        XCTAssertEqual(updatedProduct.attributes, [attribute1, attribute3])
     }
 
     func test_saving_new_attribute_does_not_override_existing_local_attribute() throws {
@@ -360,7 +448,8 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
         }
 
         let initialAttribute = sampleAttribute(attributeID: 0, name: "attr-1")
-        let initialProduct = sampleProduct().copy(attributes: [initialAttribute])
+        let initialNonVarAttribute = sampleNonVariationAttribute()
+        let initialProduct = sampleProduct().copy(attributes: [initialAttribute, initialNonVarAttribute])
         let viewModel = AddAttributeOptionsViewModel(product: initialProduct, attribute: .new(name: "attr-2"), stores: stores)
 
         viewModel.addNewOption(name: "Option 1")
@@ -380,7 +469,111 @@ final class AddAttributeOptionsViewModelTests: XCTestCase {
 
         // Then
         let expectedAttribute = sampleAttribute(attributeID: 0, name: "attr-2", options: ["Option 1", "Option 2"])
-        XCTAssertEqual(updatedProduct.attributes, [initialAttribute, expectedAttribute])
+        XCTAssertEqual(updatedProduct.attributes, [initialAttribute, initialNonVarAttribute, expectedAttribute])
+    }
+
+    func test_existing_local_attribute_should_preselect_options() throws {
+        // Given
+        let attribute = sampleAttribute(attributeID: 0, name: "Color", options: ["Green", "Blue", "Red"])
+        XCTAssertTrue(attribute.isLocal)
+
+        // When
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+        // Then
+        let textFieldSection = try XCTUnwrap(viewModel.sections.last?.rows)
+        XCTAssertEqual(textFieldSection, [
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "Green"),
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "Blue"),
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "Red")
+        ])
+    }
+
+    func test_existing_global_attribute_should_preselect_options() throws {
+        // Given
+        let attribute = sampleAttribute(name: "Size", options: ["S", "M", "L"])
+        XCTAssertTrue(attribute.isGlobal)
+
+        // When
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+        // Then
+        let textFieldSection = try XCTUnwrap(viewModel.sections.last?.rows)
+        XCTAssertEqual(textFieldSection, [
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "S"),
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "M"),
+            AddAttributeOptionsViewController.Row.selectedOptions(name: "L")
+        ])
+    }
+
+    func test_new_attribute_should_allow_reorder() throws {
+        // Given
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .new(name: sampleAttributeName))
+
+        // When
+        viewModel.addNewOption(name: "Option 1")
+        viewModel.addNewOption(name: "Option 2")
+
+        // Then
+        let selectedSection = try XCTUnwrap(viewModel.sections.last)
+        XCTAssertTrue(selectedSection.allowsReorder)
+    }
+
+    func test_local_attribute_should_allow_reorder() throws {
+        // Given, When
+        let attribute = sampleAttribute(attributeID: 0, name: "Color", options: ["Green", "Blue", "Red"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+
+        // Then
+        let selectedSection = try XCTUnwrap(viewModel.sections.last)
+        XCTAssertTrue(selectedSection.allowsReorder)
+        XCTAssertTrue(attribute.isLocal)
+    }
+
+    func test_global_attribute_should_not_allow_reorder() throws {
+        // Given, When
+        let attribute = sampleAttribute(name: "Color", options: ["Green", "Blue", "Red"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+
+        // Then
+        let selectedSection = try XCTUnwrap(viewModel.sections.last)
+        XCTAssertFalse(selectedSection.allowsReorder)
+        XCTAssertTrue(attribute.isGlobal)
+    }
+
+    func test_local_attribute_should_allow_rename() {
+        // Given, When
+        let attribute = sampleAttribute(attributeID: 0, name: "Color", options: ["Green", "Blue", "Red"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+        // Then
+        XCTAssertTrue(attribute.isLocal)
+        XCTAssertTrue(viewModel.allowsRename)
+    }
+
+    func test_global_attribute_should_not_allow_rename() {
+        // Given, When
+        let attribute = sampleAttribute(name: "Color", options: ["Green", "Blue", "Red"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+
+        // Then
+        XCTAssertTrue(attribute.isGlobal)
+        XCTAssertFalse(viewModel.allowsRename)
+    }
+
+    func test_next_button_is_enabled_after_renaming_attribute() {
+        // Given
+        let attribute = sampleAttribute(name: "Color", options: ["Green", "Blue", "Red"])
+        let viewModel = AddAttributeOptionsViewModel(product: sampleProduct(), attribute: .existing(attribute: attribute))
+        XCTAssertFalse(viewModel.isNextButtonEnabled)
+
+        // When
+        viewModel.setCurrentAttributeName("New Color")
+
+        // Then
+        XCTAssertTrue(viewModel.isNextButtonEnabled)
     }
 }
 
@@ -398,6 +591,16 @@ private extension AddAttributeOptionsViewModelTests {
                          position: 0,
                          visible: true,
                          variation: true,
+                         options: options)
+    }
+
+    func sampleNonVariationAttribute(attributeID: Int64 = 9999, name: String? = nil, options: [String] = []) -> ProductAttribute {
+        ProductAttribute(siteID: 123,
+                         attributeID: attributeID,
+                         name: name ?? sampleAttributeName,
+                         position: 0,
+                         visible: true,
+                         variation: false,
                          options: options)
     }
 

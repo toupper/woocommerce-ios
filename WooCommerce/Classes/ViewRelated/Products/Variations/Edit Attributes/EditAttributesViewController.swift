@@ -12,18 +12,22 @@ final class EditAttributesViewController: UIViewController {
     private let viewModel: EditAttributesViewModel
 
     private let noticePresenter: NoticePresenter
+    private let analytics: Analytics
 
     /// Assign this closure to be notified after a variation is created.
     ///
     var onVariationCreation: ((Product) -> Void)?
 
-    /// Assign this closure to be notified after an attribute  is created.
+    /// Assign this closure to be notified after an attribute  is created or updated.
     ///
-    var onAttributeCreation: ((Product) -> Void)?
+    var onAttributesUpdate: ((Product) -> Void)?
 
-    init(viewModel: EditAttributesViewModel, noticePresenter: NoticePresenter = ServiceLocator.noticePresenter) {
+    init(viewModel: EditAttributesViewModel,
+         noticePresenter: NoticePresenter = ServiceLocator.noticePresenter,
+         analytics: Analytics = ServiceLocator.analytics) {
         self.viewModel = viewModel
         self.noticePresenter = noticePresenter
+        self.analytics = analytics
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -93,6 +97,7 @@ extension EditAttributesViewController {
 
     @objc private func addButtonTapped() {
         navigateToAddAttributeViewController()
+        analytics.track(event: WooAnalyticsEvent.Variations.addAttributeButtonTapped(productID: viewModel.product.productID))
     }
 
     /// Creates a variation and presents a loading screen while it is created.
@@ -119,11 +124,24 @@ extension EditAttributesViewController {
         let addAttributeViewController = AddAttributeViewController(viewModel: addAttributeVM) { [weak self] updatedProduct in
             guard let self = self else { return }
             self.viewModel.updateProduct(updatedProduct)
-            self.onAttributeCreation?(updatedProduct)
+            self.onAttributesUpdate?(updatedProduct)
             self.tableView.reloadData()
-            self.navigationController?.popToViewController(self, animated: true)
         }
         show(addAttributeViewController, sender: self)
+    }
+
+    /// Navigates to `AddAttributeOptionsViewController` to provide delete/rename/edit-options functionality.
+    /// Upon completion, update the product and notify invoker
+    ///
+    private func navigateToEditAttribute(_ attribute: ProductAttribute) {
+        let editViewModel = AddAttributeOptionsViewModel(product: viewModel.product, attribute: .existing(attribute: attribute), allowsEditing: true)
+        let editViewController = AddAttributeOptionsViewController(viewModel: editViewModel) { [weak self] updatedProduct in
+            guard let self = self else { return }
+            self.viewModel.updateProduct(updatedProduct)
+            self.onAttributesUpdate?(updatedProduct)
+            self.tableView.reloadData()
+        }
+        show(editViewController, sender: true)
     }
 }
 
@@ -143,7 +161,9 @@ extension EditAttributesViewController: UITableViewDataSource, UITableViewDelega
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // TODO: Navigate to edit attribute
+        tableView.deselectRow(at: indexPath, animated: true)
+        let attribute = viewModel.productAttributeAtIndex(indexPath.row)
+        navigateToEditAttribute(attribute)
     }
 }
 

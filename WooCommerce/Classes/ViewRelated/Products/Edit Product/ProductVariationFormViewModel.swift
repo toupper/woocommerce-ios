@@ -57,6 +57,10 @@ final class ProductVariationFormViewModel: ProductFormViewModelProtocol {
         }
     }
 
+    /// Assign this closure to get notified when the variation is deleted.
+    ///
+    var onVariationDeletion: ((ProductVariation) -> Void)?
+
     private let allAttributes: [ProductAttribute]
     private let parentProductSKU: String?
     private let productImageActionHandler: ProductImageActionHandler
@@ -115,7 +119,7 @@ extension ProductVariationFormViewModel {
     }
 
     func canDeleteProduct() -> Bool {
-        false
+        formType == .edit
     }
 }
 
@@ -161,7 +165,7 @@ extension ProductVariationFormViewModel {
     func updateInventorySettings(sku: String?,
                                  manageStock: Bool,
                                  soldIndividually: Bool?,
-                                 stockQuantity: Int64?,
+                                 stockQuantity: Decimal?,
                                  backordersSetting: ProductBackordersSetting?,
                                  stockStatus: ProductStockStatus?) {
         productVariation = EditableProductVariationModel(productVariation: productVariation.productVariation.copy(sku: sku,
@@ -265,9 +269,21 @@ extension ProductVariationFormViewModel {
         storesManager.dispatch(updateAction)
     }
 
-    func deleteProductRemotely(onCompletion: @escaping (Result<EditableProductModel, ProductUpdateError>) -> Void) {
-        // no-op
+    func deleteProductRemotely(onCompletion: @escaping (Result<Void, ProductUpdateError>) -> Void) {
+        let deleteAction = ProductVariationAction.deleteProductVariation(productVariation: productVariation.productVariation) { [weak self] result in
+            switch result {
+            case .success:
+                if let self = self {
+                    self.onVariationDeletion?(self.productVariation.productVariation)
+                }
+                onCompletion(.success(()))
+            case .failure(let error):
+                onCompletion(.failure(error))
+            }
+        }
+        storesManager.dispatch(deleteAction)
     }
+
     private func resetProductVariation(_ productVariation: EditableProductVariationModel) {
         originalProductVariation = productVariation
         isUpdateEnabledSubject.send(hasUnsavedChanges())

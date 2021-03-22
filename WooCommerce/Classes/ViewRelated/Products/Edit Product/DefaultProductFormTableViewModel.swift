@@ -12,16 +12,12 @@ struct DefaultProductFormTableViewModel: ProductFormTableViewModel {
     //
     var siteTimezone: TimeZone = TimeZone.siteTimezone
 
-    private let isAddProductVariationsEnabled: Bool
-
     init(product: ProductFormDataModel,
          actionsFactory: ProductFormActionsFactoryProtocol,
          currency: String,
-         currencyFormatter: CurrencyFormatter = CurrencyFormatter(currencySettings: ServiceLocator.currencySettings),
-         featureFlagService: FeatureFlagService = ServiceLocator.featureFlagService) {
+         currencyFormatter: CurrencyFormatter = CurrencyFormatter(currencySettings: ServiceLocator.currencySettings)) {
         self.currency = currency
         self.currencyFormatter = currencyFormatter
-        self.isAddProductVariationsEnabled = featureFlagService.isFeatureFlagEnabled(.addProductVariations)
         configureSections(product: product, actionsFactory: actionsFactory)
     }
 }
@@ -206,7 +202,8 @@ private extension DefaultProductFormTableViewModel {
         }
 
         if let stockQuantity = product.stockQuantity, product.manageStock {
-            inventoryDetails.append(String.localizedStringWithFormat(Localization.stockQuantityFormat, stockQuantity))
+            let localizedStockQuantity = NumberFormatter.localizedString(from: stockQuantity as NSDecimalNumber, number: .decimal)
+            inventoryDetails.append(String.localizedStringWithFormat(Localization.stockQuantityFormat, localizedStockQuantity))
         } else if product.manageStock == false && product.isStockStatusEnabled() {
             let stockStatus = product.stockStatus
             inventoryDetails.append(stockStatus.description)
@@ -374,31 +371,24 @@ private extension DefaultProductFormTableViewModel {
 
     func variationsRow(product: Product) -> ProductFormSection.SettingsRow.ViewModel {
         let icon = UIImage.variationsImage
-        let title = (product.variations.isEmpty && isAddProductVariationsEnabled) ? Localization.addVariationsTitle : Localization.variationsTitle
+        let title = product.variations.isEmpty ? Localization.addVariationsTitle : Localization.variationsTitle
 
         let details: String
         let format = NSLocalizedString("%1$@ (%2$ld options)", comment: "Format for each Product attribute")
 
         switch product.variations.count {
         case 1...:
-            details = product.attributes
+            details = product.attributesForVariations
                 .map({ String.localizedStringWithFormat(format, $0.name, $0.options.count) })
                 .joined(separator: "\n")
         default:
-            if isAddProductVariationsEnabled {
-                details = ""
-            }
-            else {
-                details = Localization.variationsPlaceholder
-            }
+            details = ""
         }
-
-        let isActionable = product.variations.isNotEmpty || (product.variations.isEmpty && isAddProductVariationsEnabled)
 
         return ProductFormSection.SettingsRow.ViewModel(icon: icon,
                                                         title: title,
                                                         details: details,
-                                                        isActionable: isActionable)
+                                                        isActionable: true)
     }
 
     // MARK: Product variation only
@@ -524,7 +514,7 @@ private extension DefaultProductFormTableViewModel {
         // Inventory
         static let skuFormat = NSLocalizedString("SKU: %@",
                                                  comment: "Format of the SKU on the Inventory Settings row")
-        static let stockQuantityFormat = NSLocalizedString("Quantity: %ld",
+        static let stockQuantityFormat = NSLocalizedString("Quantity: %@",
                                                            comment: "Format of the stock quantity on the Inventory Settings row")
 
         // Product Type
@@ -568,8 +558,6 @@ private extension DefaultProductFormTableViewModel {
         static let variationsTitle =
             NSLocalizedString("Variations",
                               comment: "Title of the Product Variations row on Product main screen for a variable product")
-        static let variationsPlaceholder = NSLocalizedString("No variations yet",
-                                                             comment: "Placeholder of the Product Variations row on Product main screen for a variable product")
 
         // Variation status
         static let variationStatusTitle =

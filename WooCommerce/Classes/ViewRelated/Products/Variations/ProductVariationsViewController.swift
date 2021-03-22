@@ -20,7 +20,7 @@ final class ProductVariationsViewController: UIViewController {
                            image: .emptyBoxImage,
                            details: "",
                            buttonTitle: Localization.emptyStateButtonTitle) { [weak self] in
-                            self?.navigateToAddAttributeViewController()
+                            self?.createVariationFromEmptyState()
                            }
     }()
 
@@ -92,6 +92,8 @@ final class ProductVariationsViewController: UIViewController {
 
     private var product: Product {
         didSet {
+            configureRightButtonItem()
+            updateEmptyState()
             onProductUpdate?(product)
         }
     }
@@ -105,7 +107,7 @@ final class ProductVariationsViewController: UIViewController {
     }
 
     private var allAttributes: [ProductAttribute] {
-        product.attributes
+        product.attributesForVariations
     }
 
     private var parentProductSKU: String? {
@@ -114,10 +116,10 @@ final class ProductVariationsViewController: UIViewController {
 
     private let formType: ProductFormType
     private let imageService: ImageService = ServiceLocator.imageService
-    private let isAddProductVariationsEnabled: Bool
 
     private let viewModel: ProductVariationsViewModel
     private let noticePresenter: NoticePresenter
+    private let analytics: Analytics
 
     /// Assign this closure to get notified when the underlying product changes due to new variations or new attributes.
     ///
@@ -126,13 +128,13 @@ final class ProductVariationsViewController: UIViewController {
     init(viewModel: ProductVariationsViewModel,
          product: Product,
          formType: ProductFormType,
-         isAddProductVariationsEnabled: Bool,
-         noticePresenter: NoticePresenter = ServiceLocator.noticePresenter) {
+         noticePresenter: NoticePresenter = ServiceLocator.noticePresenter,
+         analytics: Analytics = ServiceLocator.analytics) {
         self.product = product
         self.formType = formType
-        self.isAddProductVariationsEnabled = isAddProductVariationsEnabled
         self.viewModel = viewModel
         self.noticePresenter = noticePresenter
+        self.analytics = analytics
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -153,12 +155,9 @@ final class ProductVariationsViewController: UIViewController {
         configureHeaderContainerView()
         configureAddButton()
         updateTopBannerView()
+        updateEmptyState()
 
         syncingCoordinator.synchronizeFirstPage()
-
-        if product.variations.isEmpty {
-            displayEmptyViewController()
-        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -181,14 +180,16 @@ private extension ProductVariationsViewController {
             "Variations",
             comment: "Title that appears on top of the Product Variation List screen."
         )
-        if viewModel.showMoreButton {
-            configureMoreOptionsButton()
-        }
+        configureRightButtonItem()
     }
 
-    /// Configure More Options button.
+    /// Configure right button item.
     ///
-    func configureMoreOptionsButton() {
+    func configureRightButtonItem() {
+        guard viewModel.shouldShowMoreButton(for: product) else {
+            return navigationItem.rightBarButtonItem = nil
+        }
+
         let moreButton = UIBarButtonItem(image: .moreImage,
                                          style: .plain,
                                          target: self,
@@ -235,6 +236,16 @@ private extension ProductVariationsViewController {
         tableView.register(ProductsTabProductTableViewCell.self)
     }
 
+    /// Shows or hides the empty state screen.
+    ///
+    func updateEmptyState() {
+        if viewModel.shouldShowEmptyState(for: product) {
+            displayEmptyViewController()
+        } else {
+            removeEmptyViewController()
+        }
+    }
+
     /// Shows the EmptyStateViewController
     ///
     private func displayEmptyViewController() {
@@ -263,16 +274,13 @@ private extension ProductVariationsViewController {
     func configureHeaderContainerView() {
         let headerContainer = UIView(frame: CGRect(x: 0, y: 0, width: Int(tableView.frame.width), height: 0))
         headerContainer.addSubview(topStackView)
-        headerContainer.pinSubviewToSafeArea(topStackView)
+        headerContainer.pinSubviewToAllEdges(topStackView)
         topStackView.addArrangedSubview(topBannerView)
 
         tableView.tableHeaderView = headerContainer
     }
 
     func configureAddButton() {
-        guard isAddProductVariationsEnabled else {
-            return
-        }
         let buttonContainer = UIView()
         buttonContainer.backgroundColor = .listForeground
 
@@ -411,12 +419,19 @@ extension ProductVariationsViewController: UITableViewDelegate {
                                                       parentProductSKU: parentProductSKU,
                                                       formType: formType,
                                                       productImageActionHandler: productImageActionHandler)
+        viewModel.onVariationDeletion = { [weak self] variation in
+            guard let self = self else { return }
+
+            // Remove deleted variation from variations array
+            let variationsUpdated = self.product.variations.filter { $0 != variation.productVariationID }
+            let updatedProduct = self.product.copy(variations: variationsUpdated)
+            self.product = updatedProduct
+        }
         let viewController = ProductFormViewController(viewModel: viewModel,
                                                        eventLogger: ProductVariationFormEventLogger(),
                                                        productImageActionHandler: productImageActionHandler,
                                                        currency: currency,
-                                                       presentationStyle: .navigationStack,
-                                                       isAddProductVariationsEnabled: isAddProductVariationsEnabled)
+                                                       presentationStyle: .navigationStack)
         navigationController?.pushViewController(viewController, animated: true)
     }
 
@@ -435,14 +450,27 @@ extension ProductVariationsViewController: UITableViewDelegate {
 
 // MARK: Navigation
 private extension ProductVariationsViewController {
+    func createVariationFromEmptyState() {
+        if product.attributesForVariations.isNotEmpty {
+            createVariation()
+        } else {
+            navigateToAddAttributeViewController()
+        }
+    }
+
     func navigateToAddAttributeViewController() {
         let viewModel = AddAttributeViewModel(product: product)
         let addAttributeViewController = AddAttributeViewController(viewModel: viewModel) { [weak self] updatedProduct in
             guard let self = self else { return }
             self.product = updatedProduct
             self.navigateToEditAttributeViewController(allowVariationCreation: true)
+
+            // Update variations: Edge case product didn't had attributes but had variations
+            self.syncingCoordinator.synchronizeFirstPage()
         }
         show(addAttributeViewController, sender: self)
+
+        analytics.track(event: WooAnalyticsEvent.Variations.addFirstVariationButtonTapped(productID: product.productID))
     }
 
     /// Cleans the navigation stack until `self` and navigates to `EditAttributesViewController`
@@ -456,11 +484,12 @@ private extension ProductVariationsViewController {
         let editAttributeViewController = EditAttributesViewController(viewModel: editAttributesViewModel)
         editAttributeViewController.onVariationCreation = { [weak self] updatedProduct in
             self?.product = updatedProduct
-            self?.removeEmptyViewController()
-            self?.navigationController?.popViewController(animated: true)
+            navigationController.popViewController(animated: true)
         }
-        editAttributeViewController.onAttributeCreation = { [weak self] updatedProduct in
-            self?.product = updatedProduct
+        editAttributeViewController.onAttributesUpdate = { [weak self] updatedProduct in
+            guard let self = self else { return }
+            self.product = updatedProduct
+            self.onAttributesUpdate(editAttributesViewController: editAttributeViewController)
         }
 
         guard let indexOfSelf = navigationController.viewControllers.firstIndex(of: self) else {
@@ -469,6 +498,18 @@ private extension ProductVariationsViewController {
 
         let viewControllersUntilSelf = navigationController.viewControllers[0...indexOfSelf]
         navigationController.setViewControllers(viewControllersUntilSelf + [editAttributeViewController], animated: true)
+    }
+
+    /// Refreshes the product variations list and navigates to the appropriate screen.
+    /// Navigates back to edit attribute screen if the product has attributes.
+    /// Navigates back to variations list if the product doesn't has attributes.
+    ///
+    private func onAttributesUpdate(editAttributesViewController: UIViewController) {
+        // Refresh variations because updating an attribute updates the product variations.
+        syncingCoordinator.synchronizeFirstPage()
+
+        let viewControllerToShow = allAttributes.isNotEmpty ? editAttributesViewController : self
+        navigationController?.popToViewController(viewControllerToShow, animated: true)
     }
 }
 
@@ -482,6 +523,7 @@ private extension ProductVariationsViewController {
     }
 
     @objc func addButtonTapped() {
+        analytics.track(event: WooAnalyticsEvent.Variations.addMoreVariationsButtonTapped(productID: product.productID))
         createVariation()
     }
 }
@@ -495,6 +537,7 @@ private extension ProductVariationsViewController {
 
         let editAttributesAction = UIAlertAction(title: Localization.editAttributesAction, style: .default) { [weak self] _ in
             self?.navigateToEditAttributeViewController(allowVariationCreation: false)
+            self?.trackEditAttributesButtonPressed()
         }
         actionSheet.addAction(editAttributesAction)
 
@@ -505,6 +548,10 @@ private extension ProductVariationsViewController {
         popoverController?.barButtonItem = sender
 
         present(actionSheet, animated: true)
+    }
+
+    func trackEditAttributesButtonPressed() {
+        analytics.track(event: WooAnalyticsEvent.Variations.editAttributesButtonTapped(productID: product.productID))
     }
 }
 
@@ -580,14 +627,15 @@ extension ProductVariationsViewController: SyncingCoordinatorDelegate {
         let progressViewController = InProgressViewController(viewProperties: .init(title: Localization.generatingVariation,
                                                                                     message: Localization.waitInstructions))
         present(progressViewController, animated: true)
-        viewModel.generateVariation { [onProductUpdate, noticePresenter] result in
+        viewModel.generateVariation(for: product) { [weak self] result in
             progressViewController.dismiss(animated: true)
 
-            guard let variation = try? result.get() else {
-                return noticePresenter.enqueue(notice: .init(title: Localization.generateVariationError, feedbackType: .error))
+            guard let self = self else { return }
+            guard let updatedProduct = try? result.get() else {
+                return self.noticePresenter.enqueue(notice: .init(title: Localization.generateVariationError, feedbackType: .error))
             }
 
-            onProductUpdate?(variation)
+            self.product = updatedProduct
         }
     }
 }

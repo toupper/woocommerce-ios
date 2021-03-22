@@ -52,6 +52,12 @@ extension EditAttributesViewModel {
         let useCase = GenerateVariationUseCase(product: product, stores: stores)
         useCase.generateVariation(onCompletion: onCompletion)
     }
+
+    /// Returns the underlying `ProductAttribute` that fuels an `attributes` type  at the given index.
+    ///
+    func productAttributeAtIndex(_ index: Int) -> ProductAttribute {
+        return product.attributesForVariations[index]
+    }
 }
 
 // MARK: Helpers
@@ -59,7 +65,7 @@ private extension EditAttributesViewModel {
 
     /// Creates an array of `ImageAndTitleAndTextTableViewCell.ViewModel` based on the `product.attributes`
     func createAttributeViewModels() -> [ImageAndTitleAndTextTableViewCell.ViewModel] {
-        product.attributes.map { attribute in
+        product.attributesForVariations.map { attribute in
             ImageAndTitleAndTextTableViewCell.ViewModel(title: attribute.name,
                                                         text: attribute.options.joined(separator: ", "),
                                                         numberOfLinesForTitle: 0,

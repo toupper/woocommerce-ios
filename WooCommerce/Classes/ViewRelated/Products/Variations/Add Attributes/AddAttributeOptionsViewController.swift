@@ -11,7 +11,9 @@ final class AddAttributeOptionsViewController: UIViewController {
 
     private let noticePresenter: NoticePresenter
 
-    /// Closure to be invoked(with the updated product)  when the update/create attribute operation finishes successfully.
+    private let analytics: Analytics
+
+    /// Closure to be invoked(with the updated product) when the update/create/remove attribute operation finishes successfully.
     ///
     private let onCompletion: (Product) -> Void
 
@@ -21,15 +23,30 @@ final class AddAttributeOptionsViewController: UIViewController {
         self?.handleKeyboardFrameUpdate(keyboardFrame: keyboardFrame)
     }
 
+    /// Empty state screen
+    ///
+    private lazy var emptyStateViewController = EmptyStateViewController(style: .list)
+
+    /// Sync error state config for EmptyStateViewController
+    ///
+    private lazy var errorStateConfig: EmptyStateViewController.Config = {
+        let message = NSAttributedString(string: Localization.syncErrorMessage, attributes: [.font: EmptyStateViewController.Config.messageFont])
+        return .withButton(message: message, image: .errorImage, details: "", buttonTitle: Localization.retryAction) { [weak self] in
+            self?.viewModel.synchronizeOptions()
+        }
+    }()
+
     /// Initializer for `AddAttributeOptionsViewController`
     ///
     /// - Parameters:
-    ///   - onCompletion: Closure to be invoked(with the updated product)  when the update/create attribute operation finishes successfully.
+    ///   - onCompletion: Closure to be invoked(with the updated product) when the update/create/remove attribute operation finishes successfully.
     init(viewModel: AddAttributeOptionsViewModel,
          noticePresenter: NoticePresenter = ServiceLocator.noticePresenter,
+         analytics: Analytics = ServiceLocator.analytics,
          onCompletion: @escaping (Product) -> Void) {
         self.viewModel = viewModel
         self.noticePresenter = noticePresenter
+        self.analytics = analytics
         self.onCompletion = onCompletion
         super.init(nibName: nil, bundle: nil)
     }
@@ -63,19 +80,30 @@ private extension AddAttributeOptionsViewController {
     func configureRightButtonItem() {
         // The update indicator has precedence over the next button
         if viewModel.showUpdateIndicator {
-            let indicator = UIActivityIndicatorView(style: .medium)
-            indicator.color = .primaryButtonTitle
-            indicator.startAnimating()
-            navigationItem.rightBarButtonItem = UIBarButtonItem(customView: indicator)
-            return
+            return navigationItem.rightBarButtonItems = [createUpdateIndicatorButton()]
         }
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: Localization.nextNavBarButton,
-                                                            style: .plain,
-                                                            target: self,
-                                                            action: #selector(nextButtonPressed))
-        navigationItem.rightBarButtonItem?.isEnabled = viewModel.isNextButtonEnabled
+        // Assemble buttons based view model visibility
+        let moreButton = UIBarButtonItem(image: .moreImage, style: .plain, target: self, action: #selector(moreButtonPressed(_:)))
+        let buttons = [
+            createNextButton(enabled: viewModel.isNextButtonEnabled),
+            viewModel.showMoreButton ? moreButton : nil
+        ]
 
+        navigationItem.rightBarButtonItems = buttons.compactMap { $0 }
+    }
+
+    func createUpdateIndicatorButton() -> UIBarButtonItem {
+        let indicator = UIActivityIndicatorView(style: .medium)
+        indicator.color = .navigationBarLoadingIndicator
+        indicator.startAnimating()
+        return UIBarButtonItem(customView: indicator)
+    }
+
+    func createNextButton(enabled: Bool) -> UIBarButtonItem {
+        let button = UIBarButtonItem(title: Localization.nextNavBarButton, style: .plain, target: self, action: #selector(nextButtonPressed))
+        button.isEnabled = enabled
+        return button
     }
 
     func configureMainView() {
@@ -121,7 +149,7 @@ private extension AddAttributeOptionsViewController {
     }
 
     func renderViewModel() {
-        title = viewModel.titleView
+        title = viewModel.getCurrentAttributeName
         configureRightButtonItem()
         tableView.reloadData()
 
@@ -130,6 +158,35 @@ private extension AddAttributeOptionsViewController {
         } else {
             removeGhostTableView()
         }
+
+        if viewModel.showSyncError {
+            displaySyncErrorViewController()
+        } else {
+            removeEmptyStateViewController()
+        }
+    }
+
+    /// Shows the EmptyStateViewController for options sync error state
+    ///
+    func displaySyncErrorViewController() {
+        addChild(emptyStateViewController)
+
+        emptyStateViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(emptyStateViewController.view)
+
+        emptyStateViewController.view.pinSubviewToAllEdges(view)
+        emptyStateViewController.didMove(toParent: self)
+        emptyStateViewController.configure(errorStateConfig)
+    }
+
+    func removeEmptyStateViewController() {
+        guard emptyStateViewController.parent == self else {
+            return
+        }
+
+        emptyStateViewController.willMove(toParent: nil)
+        emptyStateViewController.view.removeFromSuperview()
+        emptyStateViewController.removeFromParent()
     }
 }
 
@@ -333,6 +390,83 @@ extension AddAttributeOptionsViewController {
             }
         }
     }
+
+    /// Present an action-sheet with `Remove` and `Rename` options.
+    ///
+    @objc private func moreButtonPressed(_ sender: UIBarButtonItem) {
+        let actionSheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        actionSheet.view.tintColor = .text
+
+        if viewModel.allowsRename {
+            let renameAction = UIAlertAction(title: Localization.renameAction, style: .default) { [weak self] _ in
+                self?.trackRenameAttributeButtonTapped()
+                self?.navigateToRenameAttribute()
+            }
+            actionSheet.addAction(renameAction)
+        }
+
+        let removeAction = UIAlertAction(title: Localization.removeAction, style: .destructive) { [weak self] _ in
+            self?.presentRemoveAttributeConfirmation()
+        }
+        actionSheet.addAction(removeAction)
+
+        let cancelAction = UIAlertAction(title: Localization.cancelAction, style: .cancel)
+        actionSheet.addAction(cancelAction)
+
+        let popoverController = actionSheet.popoverPresentationController
+        popoverController?.barButtonItem = sender
+
+        present(actionSheet, animated: true)
+    }
+
+    func trackRenameAttributeButtonTapped() {
+        analytics.track(event: WooAnalyticsEvent.Variations.renameAttributeButtonTapped(productID: viewModel.product.productID))
+    }
+
+    /// Navigates to `RenameAttributesViewController`
+    ///
+    private func navigateToRenameAttribute() {
+        let viewModel = RenameAttributesViewModel(attributeName: self.viewModel.getCurrentAttributeName)
+        let renameAttributeViewController = RenameAttributesViewController(viewModel: viewModel) { [weak self] updatedAttributeName in
+            // Sets new attribute name
+            self?.viewModel.setCurrentAttributeName(updatedAttributeName)
+            self?.navigationController?.popViewController(animated: true)
+        }
+        show(renameAttributeViewController, sender: nil)
+    }
+
+    /// Presents a confirmation alert and removes the attribute if the merchant confirms it.
+    ///
+    private func presentRemoveAttributeConfirmation() {
+        let alertController = UIAlertController(title: Localization.removeConfirmationTitle,
+                                                message: Localization.removeConfirmationInfo,
+                                                preferredStyle: .alert)
+        alertController.view.tintColor = .text
+
+        alertController.addCancelActionWithTitle(Localization.cancelAction)
+        alertController.addDestructiveActionWithTitle(Localization.removeAction) { [weak self] _ in
+            guard let self = self else { return }
+            self.analytics.track(event: WooAnalyticsEvent.Variations.removeAttributeButtonTapped(productID: self.viewModel.product.productID))
+            self.removeCurrentAttribute()
+        }
+
+        present(alertController, animated: true)
+    }
+
+    /// Tells the view model to remove the current attribute and pops the view controller after completion
+    ///
+    func removeCurrentAttribute() {
+        viewModel.removeCurrentAttribute { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case let .success(product):
+                self.onCompletion(product)
+            case let .failure(error):
+                self.noticePresenter.enqueue(notice: .init(title: Localization.removeAttributeError, feedbackType: .error))
+                DDLogError(error.localizedDescription)
+            }
+        }
+    }
 }
 
 extension AddAttributeOptionsViewController {
@@ -372,5 +506,20 @@ private extension AddAttributeOptionsViewController {
                                                             comment: "Placeholder of cell presenting the title of the new attribute option.")
         static let updateAttributeError = NSLocalizedString("The attribute couldn't be saved.",
                                                             comment: "Error title when trying to update or create an attribute remotely.")
+
+        static let syncErrorMessage = NSLocalizedString("Unable to load attribute options", comment: "Load Attribute Options Action Failed")
+        static let retryAction = NSLocalizedString("Retry", comment: "Retry Action")
+
+        static let removeAttributeError = NSLocalizedString("The attribute couldn't be removed.",
+                                                            comment: "Error title when trying to remove an attribute remotely.")
+
+        static let renameAction = NSLocalizedString("Rename", comment: "Title for renaming an attribute in the edit attribute action sheet.")
+        static let removeAction = NSLocalizedString("Remove", comment: "Title for removing an attribute in the edit attribute action sheet.")
+        static let cancelAction = NSLocalizedString("Cancel", comment: "Title for canceling the edit attribute action sheet.")
+
+        static let removeConfirmationTitle = NSLocalizedString("Remove Attribute",
+                                                               comment: "Confirmation title before removing an attribute from a variation.")
+        static let removeConfirmationInfo = NSLocalizedString("Are you sure you want to remove this attribute?",
+                                                              comment: "Confirmation text before removing an attribute from a variation.")
     }
 }

@@ -1,3 +1,4 @@
-- Ao editar um produto, agora você pode criar, excluir e atualizar variações, atributos e opções de atributo.
-- Atualizamos o design, incluindo alterações nas guias do painel. Fique à vontade para compartilhar seu feedback sobre a IU conosco para podermos fazer melhorias. 
- - Fizemos também várias outras correções. 
+O WooCommerce para iOS tem atualizações que certamente facilitarão o gerenciamento dos seus negócios.
+
+Agora você pode criar produtos variáveis do zero e publicar um rascunho/produto pendente usando a barra de navegação.
+Corrigimos erros que afetavam a inclusão de atributos ou variações de produtos e aprimoramos a exibição de texto e imagens no modo paisagem.

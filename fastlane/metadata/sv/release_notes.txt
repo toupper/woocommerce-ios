@@ -1,3 +1,4 @@
-- När du redigerar en produkt kan du nu skapa, ta bort och uppdatera produktvariationer, produktattribut och produktattributalternativ.
-- Vi har uppdaterat designen, inklusive ändringar i adminpanelens flikar. Kom gärna med feedback angående gränssnittet, så att vi kan göra förbättringar. 
- - Diverse andra korrigeringar. 
+WooCommerce iOS innehåller uppdateringar som kommer göra det enklare att driva din verksamhet.
+
+Nu kan du skapa variabla produkter från grunden och publicera ett produktutkast/en väntande produkt från navigeringsfältet.
+Vi åtgärdade ett glapp som påverkade när man lägger till produktattribut eller variationer och vi förbättrade visningen av text och bilder i liggande orientering.

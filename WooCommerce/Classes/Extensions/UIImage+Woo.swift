@@ -121,10 +121,10 @@ extension UIImage {
         return UIImage.gridicon(.cross)
     }
 
-    /// Cog Icon
+    /// Gear Icon - used in `UIBarButtonItem`
     ///
-    static var cogImage: UIImage {
-        return UIImage.gridicon(.cog)
+    static var gearBarButtonItemImage: UIImage {
+        return UIImage(systemName: "gear", withConfiguration: Configurations.barButtonItemSymbol)!
     }
 
     /// Comment Icon
@@ -172,6 +172,12 @@ extension UIImage {
     ///
     static var emptyProductsImage: UIImage {
         return UIImage(named: "woo-empty-products")!
+    }
+
+    /// Empty Products Tab Icon
+    ///
+    static var emptyProductsTabImage: UIImage {
+        return UIImage(named: "woo-empty-products-tab")!
     }
 
     /// Empty Reviews Icon
@@ -369,6 +375,18 @@ extension UIImage {
         return UIImage.gridicon(.money, size: CGSize(width: 24, height: 24))
     }
 
+    /// Product Deleted Icon
+    ///
+    static var productDeletedImage: UIImage {
+        UIImage(named: "woo-product-deleted")!
+    }
+
+    /// Product Error Icon
+    ///
+    static var productErrorImage: UIImage {
+        UIImage(named: "woo-product-error")!
+    }
+
     /// Product Reviews Icon
     ///
     static var productReviewsImage: UIImage {
@@ -439,10 +457,16 @@ extension UIImage {
         return UIImage.gridicon(.plus)
     }
 
-    /// Search Icon
+    /// Plus Icon - used in `UIBarButtonItem`
     ///
-    static var searchImage: UIImage {
-        return UIImage.gridicon(.search)
+    static var plusBarButtonItemImage: UIImage {
+        return UIImage(systemName: "plus", withConfiguration: Configurations.barButtonItemSymbol)!
+    }
+
+    /// Search Icon - used in `UIBarButtonItem`
+    ///
+    static var searchBarButtonItemImage: UIImage {
+        return UIImage(systemName: "magnifyingglass", withConfiguration: Configurations.barButtonItemSymbol)!
             .imageFlippedForRightToLeftLayoutDirection()
     }
 
@@ -474,6 +498,10 @@ extension UIImage {
     ///
     static var wordPressLogoImage: UIImage {
         return UIImage.gridicon(.mySites)
+    }
+
+    static var shippingLabelCreationInfoImage: UIImage {
+        UIImage(named: "woo-shipping-label-creation")!
     }
 
     /// Returns a star icon with the given size
@@ -605,5 +633,9 @@ private extension UIImage {
 
     enum Metrics {
         static let defaultWooLogoSize = CGSize(width: 30, height: 18)
+    }
+
+    enum Configurations {
+        static let barButtonItemSymbol = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular, scale: .medium)
     }
 }

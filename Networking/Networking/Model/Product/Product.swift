@@ -3,7 +3,7 @@ import Foundation
 
 /// Represents a Product Entity.
 ///
-public struct Product: Codable, GeneratedCopiable, Equatable {
+public struct Product: Codable, GeneratedCopiable, Equatable, GeneratedFakeable {
     public let siteID: Int64
     public let productID: Int64
     public let name: String
@@ -125,6 +125,12 @@ public struct Product: Codable, GeneratedCopiable, Equatable {
         }
 
         return stockQuantity.isInteger
+    }
+
+    /// Returns `true` if the product has a remote representation; `false` otherwise.
+    ///
+    public var existsRemotely: Bool {
+        productID != 0
     }
 
     /// Product struct initializer.

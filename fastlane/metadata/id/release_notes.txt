@@ -1,3 +1,4 @@
-- Ketika menyunting produk, sekarang Anda dapat membuat, menghapus, dan memperbarui variasi produk, atribut produk, dan pilihan atribut produk.
-- Kami membuat desain lebih segar, termasuk dengan perubahan pada tab dasbor Anda. Jangan segan untuk membagikan umpan balik terkait UI sehingga kami dapat meningkatkannya. 
- - Berbagai perbaikan lainnya. 
+WooCommerce iOS memberikan pembaruan yang akan mempermudah bisnis Anda.
+
+Anda sekarang dapat membuat produk variabel dari awal dan memublikasikan draf produk/produk tertunda dari bilah navigasi.
+Kami telah memperbaiki gangguan yang memengaruhi penambahan atribut atau variasi produk, serta meningkatkan tampilan teks dan gambar pada orientasi lanskap.

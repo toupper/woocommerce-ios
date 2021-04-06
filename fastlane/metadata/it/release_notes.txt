@@ -1,3 +1,4 @@
-- Quando viene modificato un prodotto, ora puoi creare, eliminare e aggiornare le varianti, gli attributi e le opzioni degli attributi del prodotto.
-- Abbiamo aggiornato il design, includendo modifiche alle schede della bacheca. Non esitare a condividere con noi feedback sulla UI, in modo da poter apportare dei miglioramenti. 
- - Altre correzioni varie. 
+WooCommerce per iOS dispone di aggiornamenti che renderanno sicuramente più facile la gestione della tua attività.
+
+Ora puoi creare prodotti variabili da zero e pubblicare una bozza del prodotto/un prodotto in attesa dalla barra di navigazione.
+Abbiamo risolto gli errori tecnici che interessavano l'aggiunta di attributi o varianti del prodotto e abbiamo migliorato la visualizzazione del testo e delle immagini in orientamento orizzontale.

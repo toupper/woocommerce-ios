@@ -16,6 +16,10 @@ public protocol ShippingLabelRemoteProtocol {
                            completion: @escaping (Result<ShippingLabelAddressValidationResponse, Error>) -> Void)
     func packagesDetails(siteID: Int64,
                          completion: @escaping (Result<ShippingLabelPackagesResponse, Error>) -> Void)
+    func createPackage(siteID: Int64,
+                       customPackage: ShippingLabelCustomPackage,
+                       completion: @escaping (Result<Bool, Error>) -> Void)
+    func loadShippingLabelAccountSettings(siteID: Int64, completion: @escaping (Result<ShippingLabelAccountSettings, Error>) -> Void)
 }
 
 /// Shipping Labels Remote Endpoints.
@@ -98,6 +102,39 @@ public final class ShippingLabelRemote: Remote, ShippingLabelRemoteProtocol {
         let mapper = ShippingLabelPackagesMapper()
         enqueue(request, mapper: mapper, completion: completion)
     }
+
+    /// Creates a new custom package.
+    /// - Parameters:
+    ///   - siteID: Remote ID of the site that owns the shipping label.
+    ///   - customPackage: The custom package that should be created.
+    ///   - completion: Closure to be executed upon completion.
+    public func createPackage(siteID: Int64,
+                              customPackage: ShippingLabelCustomPackage,
+                              completion: @escaping (Result<Bool, Error>) -> Void) {
+        do {
+            let customPackageDictionary = try customPackage.toDictionary()
+            let parameters = [
+                ParameterKey.custom: [customPackageDictionary]
+            ]
+            let path = Path.packages
+            let request = JetpackRequest(wooApiVersion: .wcConnectV1, method: .post, siteID: siteID, path: path, parameters: parameters)
+            let mapper = SuccessDataResultMapper()
+            enqueue(request, mapper: mapper, completion: completion)
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+    /// Loads account-level shipping label settings for a store.
+    /// - Parameters:
+    ///   - siteID: Remote ID of the site.
+    ///   - completion: Closure to be executed upon completion.
+    public func loadShippingLabelAccountSettings(siteID: Int64, completion: @escaping (Result<ShippingLabelAccountSettings, Error>) -> Void) {
+        let path = Path.accountSettings
+        let request = JetpackRequest(wooApiVersion: .wcConnectV1, method: .get, siteID: siteID, path: path)
+        let mapper = ShippingLabelAccountSettingsMapper(siteID: siteID)
+        enqueue(request, mapper: mapper, completion: completion)
+    }
 }
 
 // MARK: Constant
@@ -106,6 +143,7 @@ private extension ShippingLabelRemote {
         static let shippingLabels = "label"
         static let normalizeAddress = "normalize-address"
         static let packages = "packages"
+        static let accountSettings = "account/settings"
     }
 
     enum ParameterKey {
@@ -113,5 +151,6 @@ private extension ShippingLabelRemote {
         static let labelIDCSV = "label_id_csv"
         static let captionCSV = "caption_csv"
         static let json = "json"
+        static let custom = "custom"
     }
 }

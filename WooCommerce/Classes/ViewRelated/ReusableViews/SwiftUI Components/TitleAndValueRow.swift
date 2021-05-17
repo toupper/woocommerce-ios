@@ -11,7 +11,7 @@ struct TitleAndValueRow: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.body)
+                .bodyStyle()
             Spacer()
             Text(value)
                 .font(.body)
@@ -23,14 +23,15 @@ struct TitleAndValueRow: View {
                     .foregroundColor(Color(UIColor.gray(.shade30)))
             }
         }
+        .contentShape(Rectangle())
+        .frame(height: Constants.height)
+        .padding([.leading, .trailing], Constants.padding)
         .onTapGesture {
             guard selectable else {
                 return
             }
             action()
          }
-        .frame(height: Constants.height)
-        .padding([.leading, .trailing], Constants.padding)
     }
 }
 

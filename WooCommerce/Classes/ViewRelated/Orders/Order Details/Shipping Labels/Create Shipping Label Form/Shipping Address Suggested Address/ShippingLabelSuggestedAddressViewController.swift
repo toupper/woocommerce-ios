@@ -38,7 +38,7 @@ final class ShippingLabelSuggestedAddressViewController: UIViewController {
     private var selectedAddress: SelectedAddress = .suggested {
         didSet {
             tableView.reloadData()
-            configureUseAddressButton()
+            updateUseAddressButton()
         }
     }
 
@@ -111,11 +111,17 @@ private extension ShippingLabelSuggestedAddressViewController {
         }
     }
 
+    // Initial configuration for the address button, should only run once
     func configureUseAddressButton() {
-        let title = selectedAddress == .entered ? Localization.useAddressEnteredButton : Localization.useAddressSuggestedButton
-        useAddressButton.setTitle(title, for: .normal)
         useAddressButton.addTarget(self, action: #selector(didTapUseAddressButton), for: .touchUpInside)
         useAddressButton.applyPrimaryButtonStyle()
+        updateUseAddressButton()
+    }
+
+    // Configuration for the address button when the UI needs to change
+    func updateUseAddressButton() {
+        let title = selectedAddress == .entered ? Localization.useAddressEnteredButton : Localization.useAddressSuggestedButton
+        useAddressButton.setTitle(title, for: .normal)
     }
 
     func configureEditAddressButton() {
@@ -150,14 +156,16 @@ private extension ShippingLabelSuggestedAddressViewController {
     }
 
     func displayEditAddressFormVC(address: ShippingLabelAddress?, type: ShipType) {
-        let shippingAddressVC = ShippingLabelAddressFormViewController(siteID: siteID,
-                                                                       type: type,
-                                                                       address: address,
-                                                                       completion: { [weak self] (newShippingLabelAddress) in
-                                                                        guard let self = self else { return }
-                                                                        self.onCompletion(newShippingLabelAddress)
-                                                                        self.navigationController?.popViewController(animated: true)
-                                                                       })
+        let shippingAddressVC = ShippingLabelAddressFormViewController(
+            siteID: siteID,
+            type: type,
+            address: address,
+            validationError: nil,
+            completion: { [weak self] (newShippingLabelAddress) in
+                guard let self = self else { return }
+                self.onCompletion(newShippingLabelAddress)
+                self.navigationController?.popViewController(animated: true)
+            })
         navigationController?.pushViewController(shippingAddressVC, animated: true)
     }
 }

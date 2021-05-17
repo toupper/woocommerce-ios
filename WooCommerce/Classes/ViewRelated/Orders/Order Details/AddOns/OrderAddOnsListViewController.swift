@@ -20,28 +20,50 @@ final class OrderAddOnsListViewController: UIHostingController<OrderAddOnListI1V
 ///
 struct OrderAddOnListI1View: View {
 
-    /// Static view model to populate the view content
-    let viewModel: OrderAddOnListI1ViewModel
+    /// View model that directs the view content.
+    @ObservedObject private(set) var viewModel: OrderAddOnListI1ViewModel
 
     /// Discussion: Due to the inability of customizing the `List` separators. We have opted to simulate the list behaviour with a `ScrollView` + `VStack`.
     /// We expect performance to be acceptable as normally an order does not have too many add-ons.
     /// A future improvement can be to use a `LazyVStack` when iOS-14 becomes our minimum target.
     ///
     var body: some View {
-        ScrollView {
-            VStack {
-                ForEach(viewModel.addOns) { addOn in
-                    OrderAddOnI1View(viewModel: addOn)
+        GeometryReader { geometry in
+
+            // Solid color as a background view to cover all non-safe area
+            Color(.listBackground).edgesIgnoringSafeArea(.all)
+
+            ScrollView {
+                VStack {
+                    OrderAddOnTopBanner(width: geometry.size.width)
+                        .onDismiss {
+                            viewModel.shouldShowBetaBanner = false
+                        }
+                        .onGiveFeedback {
+                            viewModel.shouldShowSurvey = true
+                        }
+                        .renderedIf(viewModel.shouldShowBetaBanner)
+                        .fixedSize(horizontal: false, vertical: true) // Forces view to recalculate it's height
+
+                    ForEach(viewModel.addOns) { addOn in
+                        OrderAddOnI1View(viewModel: addOn)
+                            .fixedSize(horizontal: false, vertical: true) // Forces view to recalculate it's height
+                    }
+
+                    OrderAddOnNoticeView(updateText: viewModel.updateNotice)
+                        .fixedSize(horizontal: false, vertical: true) // Forces view to recalculate it's height
                 }
             }
         }
-        .background(Color(.listBackground))
+        .sheet(isPresented: $viewModel.shouldShowSurvey) {
+            Survey(source: .addOnsI1)
+        }
     }
 }
 
 /// Renders a single order add-on
 ///
-struct OrderAddOnI1View: View {
+private struct OrderAddOnI1View: View {
 
     /// Static view model to populate the view content
     ///
@@ -68,6 +90,24 @@ struct OrderAddOnI1View: View {
             Divider()
         }
         .background(Color(.basicBackground))
+    }
+}
+
+/// Renders a info notice with an icon
+///
+private struct OrderAddOnNoticeView: View {
+
+    /// Content to be rendered next to the info icon.
+    ///
+    let updateText: String
+
+    var body: some View {
+        HStack {
+            Image(uiImage: .infoOutlineImage)
+            Text(updateText)
+        }
+        .footnoteStyle()
+        .padding([.leading, .trailing]).padding(.top, 4)
     }
 }
 

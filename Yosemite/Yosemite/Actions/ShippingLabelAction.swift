@@ -25,7 +25,7 @@ public enum ShippingLabelAction: Action {
     ///
     case validateAddress(siteID: Int64,
                          address: ShippingLabelAddressVerification,
-                         completion: (Result<ShippingLabelAddressValidationResponse, Error>) -> Void)
+                         completion: (Result<ShippingLabelAddressValidationSuccess, Error>) -> Void)
 
     /// Requests all the details for the packages (custom and predefined).
     ///
@@ -41,4 +41,9 @@ public enum ShippingLabelAction: Action {
     case createPackage(siteID: Int64,
                        customPackage: ShippingLabelCustomPackage,
                        completion: (Result<Bool, Error>) -> Void)
+
+    /// Loads account-level shipping label settings for a store.
+    ///
+    case synchronizeShippingLabelAccountSettings(siteID: Int64,
+                                                 completion: (Result<ShippingLabelAccountSettings, Error>) -> Void)
 }

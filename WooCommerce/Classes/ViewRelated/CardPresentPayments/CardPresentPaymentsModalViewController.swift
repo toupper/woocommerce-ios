@@ -87,6 +87,7 @@ private extension CardPresentPaymentsModalViewController {
 
     func styleTopSubtitle() {
         topSubtitleLabel.applyTitleStyle()
+        topSubtitleLabel.adjustsFontSizeToFitWidth = true
     }
 
     func styleBottomLabels() {

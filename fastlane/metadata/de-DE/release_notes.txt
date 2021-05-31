@@ -1,5 +1,3 @@
-Produktvariationen unterstützen nur ein Bild. Wenn ein Produkt also bereits über ein Bild verfügt, hast du die Option, dieses zu ersetzen oder zu entfernen, doch du kannst leider kein weiteres Bild hinzufügen.
+Wenn du die WooCommerce-Erweiterung für Produkt-Add-ons (von WooCommerce entwickelt) verwendest und diese Details bei der Anzeige einer Bestellung sehen wolltest, kannst du dies jetzt tun! Wir haben eine experimentelle Unterstützung der App zur Anzeige dieser Add-ons in Bestellungen hinzugefügt. Gehe zu den experimentellen Funktionen in den Einstellungen und aktiviere die Funktion, um sie auszuprobieren. Sende uns bitte dein Feedback zu deinen Erfahrungen damit!
 
-Es wurden Abstürze bei der Bildauswahl in der Mediathek gemeldet. Diese traten in Medienübersichten auf, die über eine bestimmte Anzahl von Bildern verfügten. Das Problem wurde nun behoben.
-
-Außerdem haben wir eine Fehlermeldung verbessert, die angezeigt wurde, wenn sich ein Kunde über ein Offline-Gerät, mit einem ungültigen SSL-Zertifikat oder einem blockierten XML-RPC auf einer Website angemeldet hat. Dank der aktualisierten Nachricht können Probleme bei der Anmeldung besser behoben werden.
+Außerdem werden wir ab dem nächsten Release nach diesem iOS 14 und neuere Versionen unterstützen. Um weiterhin Updates für die WooCommerce-App zu erhalten, führe bitte ein Upgrade deines Geräts auf iOS 14 durch.

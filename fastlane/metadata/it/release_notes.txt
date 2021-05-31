@@ -1,5 +1,3 @@
-Le varianti del prodotto supportano solamente un'immagine, quindi se una variante del prodotto dispone già di un'immagine, vedrai un'opzione per la sostituzione o la rimozione, ma non sarai in grado di aggiungerne un'altra.
+Se stai utilizzando l'estensione WooCommerce Product Add-Ons (realizzata da WooCommerce) e da tempo desideri vedere quei dettagli in un ordine, non devi più aspettare. Abbiamo aggiunto all'app un supporto sperimentale per mostrare quegli componenti aggiuntivi negli ordini. Per fare una prova, vai a Funzionalità in fase sperimentale in Impostazioni e abilita l'opzione. Inviaci un feedback riguardante la tua esperienza.
 
-Abbiamo ricevuto rapporti di arresti anomali durante la selezione di immagini dalla Libreria multimediale, che avvenivano con librerie che avevano un numero specifico di immagini. Il problema è stato risolto.
-
-Abbiamo anche migliorato un messaggio di errore che veniva visualizzato quando un cliente effettuava l'accesso a un sito con un dispositivo offline, un certificato SSL non valido o un XML-RPC bloccato. La messaggistica aggiornata rende più semplice per gli utenti risolvere i problemi di accesso.
+Ci stiamo anche organizzando per supportare iOS 14 o versioni successive a partire dal prossimo rilascio. Per continuare a ricevere aggiornamenti relativi all'app WooCommerce, esegui l'aggiornamento del dispositivo a iOS 14.

@@ -1,5 +1,3 @@
-Productvariaties ondersteunen slechts een afbeelding, dus als een productvariatie al een afbeelding heeft, wordt de optie weergegeven om deze te vervangen of te verwijderen. Je kunt geen extra afbeeldingen toevoegen.
+Als je de extensie WooCommerce Product Add-ons (van WooCommerce) gebruikt en de details wilt zien als je een bestelling bekijkt, hoef je niet langer te wachten! We hebben experimentele ondersteuning toegevoegd aan de app om deze add-ons in bestellingen weer te geven. Ga om dit te proberen naar Experimentele functies in Instellingen om het in te schakelen. Stuur ons je feedback over je ervaringen!
 
-We hebben meldingen ontvangen van crashes tijdens het selecteren van afbeeldingen uit de mediabibliotheek. Dit probleem deed zich voor bij bibliotheken met een specifiek aantal afbeeldingen. Dit probleem is verholpen.
-
-We hebben ook een foutmelding verbeterd die werd getoond wanneer een klant inlogde bij een site met een offline-apparaat, een ongeldig SSL-certificaat of een geblokkeerde XML-RPC. De vernieuwde melding maakt het eenvoudiger om hun login-probleem op te lossen.
+De volgende release na deze release gaan we ook iOS 14 of later ondersteunen. Om updates voor de WooCommerce-app te blijven ontvangen, moet je je apparaat upgraden naar iOS 14.

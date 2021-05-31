@@ -1,8 +1,12 @@
 *** PLEASE FOLLOW THIS FORMAT: [<priority indicator, more stars = higher priority>] <description> [<PR URL>]
 
-6.7
+6.8
 -----
 
+
+6.7
+-----
+- [**] Add-Ons: Order add-ons are now available as a beta feature. To try it, enable it from settings! [https://github.com/woocommerce/woocommerce-ios/pull/4119]
 
 6.6
 -----

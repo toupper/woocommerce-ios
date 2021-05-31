@@ -985,4 +985,76 @@ class StorageTypeExtensionsTests: XCTestCase {
         // Then
         XCTAssertEqual(accountSettings, storedAccountSettings)
     }
+
+    func test_loadAddOnGroups_by_site_ID_and_sorted_by_name() throws {
+        // Given
+        let addOnGroup1 = storage.insertNewObject(ofType: AddOnGroup.self)
+        addOnGroup1.name = "BBB"
+        addOnGroup1.siteID = sampleSiteID
+
+        let addOnGroup2 = storage.insertNewObject(ofType: AddOnGroup.self)
+        addOnGroup2.name = "AAA"
+        addOnGroup2.siteID = sampleSiteID
+
+        // When
+        let storedGroups = try XCTUnwrap(storage.loadAddOnGroups(siteID: sampleSiteID))
+
+        // Then
+        XCTAssertEqual(storedGroups, [addOnGroup2, addOnGroup1])
+    }
+
+    func test_loadAddOnGroup_by_siteID_and_groupID() throws {
+        // Given
+        let addOnGroup1 = storage.insertNewObject(ofType: AddOnGroup.self)
+        addOnGroup1.siteID = sampleSiteID
+        addOnGroup1.groupID = 1234
+
+        let addOnGroup2 = storage.insertNewObject(ofType: AddOnGroup.self)
+        addOnGroup2.siteID = sampleSiteID
+        addOnGroup2.groupID = 2345
+
+        // When
+        let storedGroup = try XCTUnwrap(storage.loadAddOnGroup(siteID: sampleSiteID, groupID: 1234))
+
+        // Then
+        XCTAssertEqual(storedGroup, addOnGroup1)
+    }
+
+    func test_loadPlugins_by_siteID_and_sorted_by_name() throws {
+        // Given
+        let plugin1 = storage.insertNewObject(ofType: SitePlugin.self)
+        plugin1.name = "BBB"
+        plugin1.siteID = sampleSiteID
+
+        let plugin2 = storage.insertNewObject(ofType: SitePlugin.self)
+        plugin2.name = "AAA"
+        plugin2.siteID = sampleSiteID
+
+        let plugin3 = storage.insertNewObject(ofType: SitePlugin.self)
+        plugin3.name = "ZZZ"
+        plugin3.siteID = sampleSiteID + 1
+
+        // When
+        let storedPlugins = try XCTUnwrap(storage.loadPlugins(siteID: sampleSiteID))
+
+        // Then
+        XCTAssertEqual(storedPlugins, [plugin2, plugin1])
+    }
+
+    func test_loadPlugin_by_siteID_and_name() throws {
+        // Given
+        let plugin1 = storage.insertNewObject(ofType: SitePlugin.self)
+        plugin1.name = "AAA"
+        plugin1.siteID = sampleSiteID
+
+        let plugin2 = storage.insertNewObject(ofType: SitePlugin.self)
+        plugin2.name = "BBB"
+        plugin2.siteID = sampleSiteID
+
+        // When
+        let foundPlugin = try XCTUnwrap(storage.loadPlugin(siteID: sampleSiteID, name: "AAA"))
+
+        // Then
+        XCTAssertEqual(foundPlugin, plugin1)
+    }
 }

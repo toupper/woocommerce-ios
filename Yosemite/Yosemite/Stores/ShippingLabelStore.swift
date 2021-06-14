@@ -49,12 +49,26 @@ public final class ShippingLabelStore: Store {
             validateAddress(siteID: siteID, address: address, completion: completion)
         case .packagesDetails(let siteID, let completion):
             packagesDetails(siteID: siteID, completion: completion)
-        case .checkCreationEligibility(let siteID, let orderID, let isFeatureFlagEnabled, let onCompletion):
-            checkCreationEligibility(siteID: siteID, orderID: orderID, isFeatureFlagEnabled: isFeatureFlagEnabled, onCompletion: onCompletion)
+        case .checkCreationEligibility(let siteID, let orderID, let canCreatePaymentMethod, let canCreateCustomsForm, let canCreatePackage, let onCompletion):
+            checkCreationEligibility(siteID: siteID,
+                                     orderID: orderID,
+                                     canCreatePaymentMethod: canCreatePaymentMethod,
+                                     canCreateCustomsForm: canCreateCustomsForm,
+                                     canCreatePackage: canCreatePackage,
+                                     onCompletion: onCompletion)
         case .createPackage(let siteID, let customPackage, let completion):
             createPackage(siteID: siteID, customPackage: customPackage, completion: completion)
+        case .loadCarriersAndRates(let siteID, let orderID, let originAddress, let destinationAddress, let packages, let completion):
+            loadCarriersAndRates(siteID: siteID,
+                                 orderID: orderID,
+                                 originAddress: originAddress,
+                                 destinationAddress: destinationAddress,
+                                 packages: packages,
+                                 completion: completion)
         case .synchronizeShippingLabelAccountSettings(let siteID, let completion):
             synchronizeShippingLabelAccountSettings(siteID: siteID, completion: completion)
+        case .updateShippingLabelAccountSettings(let siteID, let settings, let completion):
+            updateShippingLabelAccountSettings(siteID: siteID, settings: settings, completion: completion)
         }
     }
 }
@@ -118,15 +132,52 @@ private extension ShippingLabelStore {
         remote.packagesDetails(siteID: siteID, completion: completion)
     }
 
-    func checkCreationEligibility(siteID: Int64, orderID: Int64, isFeatureFlagEnabled: Bool, onCompletion: @escaping (_ isEligible: Bool) -> Void) {
-        // TODO-2971: implement shipping label creation eligibility check, hopefully with the new `/creation_eligibility` endpoint.
-        onCompletion(isFeatureFlagEnabled)
+    func checkCreationEligibility(siteID: Int64,
+                                  orderID: Int64,
+                                  canCreatePaymentMethod: Bool,
+                                  canCreateCustomsForm: Bool,
+                                  canCreatePackage: Bool,
+                                  onCompletion: @escaping (_ isEligible: Bool) -> Void) {
+        remote.checkCreationEligibility(siteID: siteID,
+                                        orderID: orderID,
+                                        canCreatePaymentMethod: canCreatePaymentMethod,
+                                        canCreateCustomsForm: canCreateCustomsForm,
+                                        canCreatePackage: canCreatePackage) { result in
+            switch result {
+            case .success(let eligibility):
+                if !eligibility.isEligible {
+                    if let reason = eligibility.reason {
+                        DDLogError("Order \(orderID) not eligible for shipping label creation: \(reason)")
+                    } else {
+                        DDLogError("Order \(orderID) not eligible for shipping label creation")
+                    }
+                }
+                onCompletion(eligibility.isEligible)
+            case .failure(let error):
+                DDLogError("⛔️ Error checking shipping label creation eligibility for order \(orderID): \(error)")
+                onCompletion(false)
+            }
+        }
     }
 
     func createPackage(siteID: Int64,
                        customPackage: ShippingLabelCustomPackage,
                        completion: @escaping (Result<Bool, Error>) -> Void) {
         remote.createPackage(siteID: siteID, customPackage: customPackage, completion: completion)
+    }
+
+    func loadCarriersAndRates(siteID: Int64,
+                              orderID: Int64,
+                              originAddress: ShippingLabelAddress,
+                              destinationAddress: ShippingLabelAddress,
+                              packages: [ShippingLabelPackageSelected],
+                              completion: @escaping (Result<ShippingLabelCarriersAndRates, Error>) -> Void) {
+        remote.loadCarriersAndRates(siteID: siteID,
+                                    orderID: orderID,
+                                    originAddress: originAddress,
+                                    destinationAddress: destinationAddress,
+                                    packages: packages,
+                                    completion: completion)
     }
 
     func synchronizeShippingLabelAccountSettings(siteID: Int64,
@@ -141,6 +192,23 @@ private extension ShippingLabelStore {
                 self.upsertShippingLabelAccountSettingsInBackground(siteID: siteID, accountSettings: settings) {
                     completion(.success(settings))
                 }
+            }
+        }
+    }
+
+    func updateShippingLabelAccountSettings(siteID: Int64,
+                                            settings: ShippingLabelAccountSettings,
+                                            completion: @escaping (Result<Bool, Error>) -> Void) {
+        remote.updateShippingLabelAccountSettings(siteID: siteID, settings: settings) { [weak self] result in
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let success):
+                self.upsertShippingLabelAccountSettingsInBackground(siteID: siteID, accountSettings: settings) {
+                    completion(.success(success))
+                }
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
     }

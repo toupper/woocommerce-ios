@@ -19,8 +19,17 @@ public protocol ShippingLabelRemoteProtocol {
     func createPackage(siteID: Int64,
                        customPackage: ShippingLabelCustomPackage,
                        completion: @escaping (Result<Bool, Error>) -> Void)
+    func loadCarriersAndRates(siteID: Int64,
+                              orderID: Int64,
+                              originAddress: ShippingLabelAddress,
+                              destinationAddress: ShippingLabelAddress,
+                              packages: [ShippingLabelPackageSelected],
+                              completion: @escaping (Result<ShippingLabelCarriersAndRates, Error>) -> Void)
     func loadShippingLabelAccountSettings(siteID: Int64,
                                           completion: @escaping (Result<ShippingLabelAccountSettings, Error>) -> Void)
+    func updateShippingLabelAccountSettings(siteID: Int64,
+                                            settings: ShippingLabelAccountSettings,
+                                            completion: @escaping (Result<Bool, Error>) -> Void)
     func checkCreationEligibility(siteID: Int64,
                                   orderID: Int64,
                                   canCreatePaymentMethod: Bool,
@@ -132,6 +141,36 @@ public final class ShippingLabelRemote: Remote, ShippingLabelRemoteProtocol {
         }
     }
 
+    /// Loads carriers and their rates.
+    /// - Parameters:
+    ///   - siteID: Remote ID of the site.
+    ///   - orderID: ID of the order.
+    ///   - originAddress: the origin address entity.
+    ///   - destinationAddress: the destination address entity.
+    ///   - packages: The package previously selected with all their data.
+    ///   - completion: Closure to be executed upon completion.
+    public func loadCarriersAndRates(siteID: Int64,
+                                     orderID: Int64,
+                                     originAddress: ShippingLabelAddress,
+                                     destinationAddress: ShippingLabelAddress,
+                                     packages: [ShippingLabelPackageSelected],
+                                     completion: @escaping (Result<ShippingLabelCarriersAndRates, Error>) -> Void) {
+        do {
+            let parameters: [String: Any] = [
+                ParameterKey.originAddress: try originAddress.toDictionary(),
+                ParameterKey.destinationAddress: try destinationAddress.toDictionary(),
+                ParameterKey.packages: try packages.map { try $0.toDictionary() }
+            ]
+            let path = "\(Path.shippingLabels)/\(orderID)/rates"
+            let request = JetpackRequest(wooApiVersion: .wcConnectV1, method: .post, siteID: siteID, path: path, parameters: parameters)
+            let mapper = ShippingLabelCarriersAndRatesMapper()
+            enqueue(request, mapper: mapper, completion: completion)
+        }
+        catch {
+            completion(.failure(error))
+        }
+    }
+
     /// Loads account-level shipping label settings for a store.
     /// - Parameters:
     ///   - siteID: Remote ID of the site.
@@ -140,6 +179,23 @@ public final class ShippingLabelRemote: Remote, ShippingLabelRemoteProtocol {
         let path = Path.accountSettings
         let request = JetpackRequest(wooApiVersion: .wcConnectV1, method: .get, siteID: siteID, path: path)
         let mapper = ShippingLabelAccountSettingsMapper(siteID: siteID)
+        enqueue(request, mapper: mapper, completion: completion)
+    }
+
+    /// Updates account-level shipping label settings for a store.
+    /// - Parameters:
+    ///     - siteID: Remote ID of the site.
+    ///     - settings: The shipping label account settings to update remotely.
+    ///     - completion: Closure to be executed upon completion.
+    public func updateShippingLabelAccountSettings(siteID: Int64, settings: ShippingLabelAccountSettings, completion: @escaping (Result<Bool, Error>) -> Void) {
+        let parameters: [String: Any] = [
+            ParameterKey.selectedPaymentMethodID: settings.selectedPaymentMethodID,
+            ParameterKey.emailReceipts: settings.isEmailReceiptsEnabled,
+            ParameterKey.paperSize: settings.paperSize.rawValue
+        ]
+        let path = Path.accountSettings
+        let request = JetpackRequest(wooApiVersion: .wcConnectV1, method: .post, siteID: siteID, path: path, parameters: parameters)
+        let mapper = SuccessResultMapper()
         enqueue(request, mapper: mapper, completion: completion)
     }
 
@@ -187,5 +243,10 @@ private extension ShippingLabelRemote {
         static let canCreatePaymentMethod = "can_create_payment_method"
         static let canCreateCustomsForm = "can_create_customs_form"
         static let canCreatePackage = "can_create_package"
+        static let originAddress = "origin"
+        static let destinationAddress = "destination"
+        static let packages = "packages"
+        static let selectedPaymentMethodID = "selected_payment_method_id"
+        static let emailReceipts = "email_receipts"
     }
 }

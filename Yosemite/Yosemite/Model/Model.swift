@@ -1,6 +1,7 @@
 import Foundation
 import Networking
 import Storage
+import Hardware
 
 
 
@@ -25,8 +26,6 @@ public typealias NoteBlock = Networking.NoteBlock
 public typealias NoteMedia = Networking.NoteMedia
 public typealias NoteRange = Networking.NoteRange
 public typealias Order = Networking.Order
-public typealias OrderCount = Networking.OrderCount
-public typealias OrderCountItem = Networking.OrderCountItem
 public typealias OrderItem = Networking.OrderItem
 public typealias OrderItemAttribute = Networking.OrderItemAttribute
 public typealias OrderItemTax = Networking.OrderItemTax
@@ -82,6 +81,7 @@ public typealias ShippingLabelAccountSettings = Networking.ShippingLabelAccountS
 public typealias ShippingLabelAddressValidationSuccess = Networking.ShippingLabelAddressValidationSuccess
 public typealias ShippingLabelAddressValidationError = Networking.ShippingLabelAddressValidationError
 public typealias ShippingLabelCustomPackage = Networking.ShippingLabelCustomPackage
+public typealias ShippingLabelPackageSelected = Networking.ShippingLabelPackageSelected
 public typealias ShippingLabelPredefinedOption = Networking.ShippingLabelPredefinedOption
 public typealias ShippingLabelPredefinedPackage = Networking.ShippingLabelPredefinedPackage
 public typealias ShippingLabelPaperSize = Networking.ShippingLabelPaperSize
@@ -90,6 +90,8 @@ public typealias ShippingLabelPaymentMethod = Networking.ShippingLabelPaymentMet
 public typealias ShippingLabelPrintData = Networking.ShippingLabelPrintData
 public typealias ShippingLabelRefund = Networking.ShippingLabelRefund
 public typealias ShippingLabelSettings = Networking.ShippingLabelSettings
+public typealias ShippingLabelCarriersAndRates = Networking.ShippingLabelCarriersAndRates
+public typealias ShippingLabelCarrierRate = Networking.ShippingLabelCarrierRate
 public typealias ShippingLine = Networking.ShippingLine
 public typealias ShippingLineTax = Networking.ShippingLineTax
 public typealias Site = Networking.Site
@@ -106,6 +108,16 @@ public typealias TopEarnerStats = Networking.TopEarnerStats
 public typealias TopEarnerStatsItem = Networking.TopEarnerStatsItem
 public typealias WooAPIVersion = Networking.WooAPIVersion
 public typealias StoredProductSettings = Networking.StoredProductSettings
+public typealias CardReader = Hardware.CardReader
+public typealias CardReaderEvent = Hardware.CardReaderEvent
+public typealias CardReaderSoftwareUpdate = Hardware.CardReaderSoftwareUpdate
+public typealias CardReaderServiceDiscoveryStatus = Hardware.CardReaderServiceDiscoveryStatus
+public typealias CardReaderServiceError = Hardware.CardReaderServiceError
+public typealias PaymentParameters = Hardware.PaymentIntentParameters
+public typealias PaymentIntent = Hardware.PaymentIntent
+public typealias PrintingResult = Hardware.PrintingResult
+public typealias CardPresentReceiptParameters = Hardware.CardPresentReceiptParameters
+public typealias WCPayAccount = Networking.WCPayAccount
 
 
 // MARK: - Exported Storage Symbols

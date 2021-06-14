@@ -83,6 +83,42 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         XCTAssertEqual(shippingLabelFormViewModel.destinationAddress, expectedShippingAddress)
     }
 
+    func test_handlePackageDetailsValueChanges_returns_updated_data() {
+        // Given
+        let shippingLabelFormViewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
+                                                                    originAddress: nil,
+                                                                    destinationAddress: nil)
+        let expectedPackageID = "my-package-id"
+        let expectedPackageWeight = "55"
+
+        // When
+        shippingLabelFormViewModel.handlePackageDetailsValueChanges(selectedPackageID: expectedPackageID, totalPackageWeight: expectedPackageWeight)
+
+        // Then
+        XCTAssertEqual(shippingLabelFormViewModel.selectedPackageID, expectedPackageID)
+        XCTAssertEqual(shippingLabelFormViewModel.totalPackageWeight, expectedPackageWeight)
+    }
+
+    func test_handleCarrierAndRatesValueChanges_returns_updated_data() {
+        // Given
+        let shippingLabelFormViewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
+                                                                    originAddress: nil,
+                                                                    destinationAddress: nil)
+        XCTAssertNil(shippingLabelFormViewModel.selectedRate)
+        XCTAssertNil(shippingLabelFormViewModel.selectedSignatureRate)
+        XCTAssertNil(shippingLabelFormViewModel.selectedAdultSignatureRate)
+
+        // When
+        shippingLabelFormViewModel.handleCarrierAndRatesValueChanges(selectedRate: MockShippingLabelCarrierRate.makeRate(),
+                                                                     selectedSignatureRate: MockShippingLabelCarrierRate.makeRate(title: "UPS"),
+                                                                     selectedAdultSignatureRate: nil)
+
+        // Then
+        XCTAssertEqual(shippingLabelFormViewModel.selectedRate, MockShippingLabelCarrierRate.makeRate())
+        XCTAssertEqual(shippingLabelFormViewModel.selectedSignatureRate, MockShippingLabelCarrierRate.makeRate(title: "UPS"))
+        XCTAssertNil(shippingLabelFormViewModel.selectedAdultSignatureRate)
+    }
+
     func test_sections_returns_updated_rows_after_validating_origin_address() {
         // Given
         let shippingLabelFormViewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
@@ -149,5 +185,39 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         XCTAssertEqual(updatedRows?[2].type, .packageDetails)
         XCTAssertEqual(updatedRows?[2].dataState, .pending)
         XCTAssertEqual(updatedRows?[2].displayMode, .editable)
+    }
+
+    func test_handlePaymentMethodValueChanges_returns_updated_data_and_state_with_no_selected_payment_method() {
+        // Given
+        let viewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
+                                                                    originAddress: nil,
+                                                                    destinationAddress: nil)
+        let expectedPaymentMethodID: Int64 = 0
+
+        // When
+        viewModel.handlePaymentMethodValueChanges(selectedPaymentMethodID: expectedPaymentMethodID, editable: false)
+
+        // Then
+        let currentRows = viewModel.state.sections.first?.rows
+        XCTAssertEqual(currentRows?[4].type, .paymentMethod)
+        XCTAssertEqual(currentRows?[4].dataState, .pending)
+        XCTAssertEqual(viewModel.selectedPaymentMethodID, expectedPaymentMethodID)
+    }
+
+    func test_handlePaymentMethodValueChanges_returns_updated_data_and_state_with_selected_payment_method() {
+        // Given
+        let viewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
+                                                                    originAddress: nil,
+                                                                    destinationAddress: nil)
+        let expectedPaymentMethodID: Int64 = 12345
+
+        // When
+        viewModel.handlePaymentMethodValueChanges(selectedPaymentMethodID: expectedPaymentMethodID, editable: false)
+
+        // Then
+        let currentRows = viewModel.state.sections.first?.rows
+        XCTAssertEqual(currentRows?[4].type, .paymentMethod)
+        XCTAssertEqual(currentRows?[4].dataState, .validated)
+        XCTAssertEqual(viewModel.selectedPaymentMethodID, expectedPaymentMethodID)
     }
 }

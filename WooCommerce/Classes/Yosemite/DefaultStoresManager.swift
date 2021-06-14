@@ -158,6 +158,12 @@ class DefaultStoresManager: StoresManager {
     ///
     @discardableResult
     func deauthenticate() -> StoresManager {
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.cardPresentPayments) {
+            let resetAction = CardPresentPaymentAction.reset
+
+            ServiceLocator.stores.dispatch(resetAction)
+        }
+
         state = DeauthenticatedState()
 
         sessionManager.reset()
@@ -338,8 +344,8 @@ private extension DefaultStoresManager {
             return
         }
 
-        let action = OrderStatusAction.retrieveOrderStatuses(siteID: siteID) { (_, error) in
-            if let error = error {
+        let action = OrderStatusAction.retrieveOrderStatuses(siteID: siteID) { result in
+            if case let .failure(error) = result {
                 DDLogError("⛔️ Could not successfully fetch order statuses for siteID \(siteID): \(error)")
             }
         }

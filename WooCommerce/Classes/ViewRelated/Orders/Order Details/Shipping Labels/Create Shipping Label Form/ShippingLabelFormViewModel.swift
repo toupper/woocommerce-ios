@@ -22,9 +22,53 @@ final class ShippingLabelFormViewModel {
 
     let siteID: Int64
     private(set) var order: Order
+
+    /// Address
+    ///
     private(set) var originAddress: ShippingLabelAddress?
     private(set) var destinationAddress: ShippingLabelAddress?
+
+    /// Packages
+    ///
     private(set) var packagesResponse: ShippingLabelPackagesResponse?
+    private(set) var selectedPackageID: String?
+
+    /// Carrier and Rates
+    ///
+    private(set) var selectedRate: ShippingLabelCarrierRate?
+    private(set) var selectedSignatureRate: ShippingLabelCarrierRate?
+    private(set) var selectedAdultSignatureRate: ShippingLabelCarrierRate?
+    var selectedPackage: ShippingLabelPackageSelected? {
+        guard let packagesResponse = packagesResponse else {
+            return nil
+        }
+
+        if let customPackage = packagesResponse.customPackages.first(where: { $0.title == selectedPackageID }) {
+            return ShippingLabelPackageSelected(boxID: customPackage.title,
+                                                length: customPackage.getLength(),
+                                                width: customPackage.getWidth(),
+                                                height: customPackage.getHeight(),
+                                                weight: customPackage.getWidth(),
+                                                isLetter: customPackage.isLetter)
+        }
+
+        for option in packagesResponse.predefinedOptions {
+            if let predefinedPackage = option.predefinedPackages.first(where: { $0.id == selectedPackageID }) {
+                    return ShippingLabelPackageSelected(boxID: predefinedPackage.id,
+                                                        length: predefinedPackage.getLength(),
+                                                        width: predefinedPackage.getWidth(),
+                                                        height: predefinedPackage.getHeight(),
+                                                        weight: predefinedPackage.getWidth(),
+                                                        isLetter: predefinedPackage.isLetter)
+            }
+        }
+
+        return nil
+    }
+    private(set) var totalPackageWeight: String?
+    private(set) var shippingLabelAccountSettings: ShippingLabelAccountSettings?
+    private(set) var selectedPaymentMethodID: Int64 = 0
+
 
     private let stores: StoresManager
 
@@ -78,6 +122,42 @@ final class ShippingLabelFormViewModel {
         updateRowState(type: .shipTo, dataState: dateState, displayMode: .editable)
     }
 
+    func handlePackageDetailsValueChanges(selectedPackageID: String?, totalPackageWeight: String?) {
+        self.selectedPackageID = selectedPackageID
+        self.totalPackageWeight = totalPackageWeight
+
+        guard !selectedPackageID.isNilOrEmpty && !totalPackageWeight.isNilOrEmpty else {
+            updateRowState(type: .packageDetails, dataState: .pending, displayMode: .editable)
+            return
+        }
+        updateRowState(type: .packageDetails, dataState: .validated, displayMode: .editable)
+    }
+
+    func handleCarrierAndRatesValueChanges(selectedRate: ShippingLabelCarrierRate?,
+                                           selectedSignatureRate: ShippingLabelCarrierRate?,
+                                           selectedAdultSignatureRate: ShippingLabelCarrierRate?) {
+        self.selectedRate = selectedRate
+        self.selectedSignatureRate = selectedSignatureRate
+        self.selectedAdultSignatureRate = selectedAdultSignatureRate
+
+        guard selectedRate != nil else {
+            updateRowState(type: .shippingCarrierAndRates, dataState: .pending, displayMode: .editable)
+            return
+        }
+        updateRowState(type: .shippingCarrierAndRates, dataState: .validated, displayMode: .editable)
+    }
+
+    func handlePaymentMethodValueChanges(selectedPaymentMethodID: Int64, editable: Bool) {
+        self.selectedPaymentMethodID = selectedPaymentMethodID
+        let displayMode: ShippingLabelFormViewController.DisplayMode = editable ? .editable : .disabled
+
+        guard selectedPaymentMethodID != 0 else {
+            updateRowState(type: .paymentMethod, dataState: .pending, displayMode: displayMode)
+            return
+        }
+        updateRowState(type: .paymentMethod, dataState: .validated, displayMode: displayMode)
+    }
+
     private static func generateInitialSections() -> [Section] {
         let shipFrom = Row(type: .shipFrom, dataState: .pending, displayMode: .editable)
         let shipTo = Row(type: .shipTo, dataState: .pending, displayMode: .disabled)
@@ -88,6 +168,57 @@ final class ShippingLabelFormViewModel {
         return [Section(rows: rows)]
     }
 
+    /// Returns the body of the Package Details cell
+    ///
+    func getPackageDetailsBody() -> String {
+        guard let packagesResponse = packagesResponse,
+              let selectedPackageID = selectedPackageID,
+              let totalPackageWeight = totalPackageWeight else {
+            return Localization.packageDetailsPlaceholder
+        }
+
+        let packageTitle = searchCustomPackage(id: selectedPackageID)?.title ?? searchPredefinedPackage(id: selectedPackageID)?.title ?? ""
+
+        let formatter = WeightFormatter(weightUnit: packagesResponse.storeOptions.weightUnit)
+        let packageWeight = formatter.formatWeight(weight: totalPackageWeight)
+
+        return packageTitle + "\n" + String.localizedStringWithFormat(Localization.totalPackageWeight, packageWeight)
+    }
+
+    /// Returns the body of the selected Carrier and Rates.
+    ///
+    func getCarrierAndRatesBody() -> String {
+        guard let selectedRate = selectedRate else {
+            return Localization.carrierAndRatesPlaceholder
+        }
+
+        var rate: Double = selectedRate.retailRate
+        if let selectedSignatureRate = selectedSignatureRate {
+            rate = selectedSignatureRate.retailRate
+        }
+        else if let selectedAdultSignatureRate = selectedAdultSignatureRate {
+            rate = selectedAdultSignatureRate.retailRate
+        }
+
+        let currencyFormatter = CurrencyFormatter(currencySettings: ServiceLocator.currencySettings)
+        let price = currencyFormatter.formatAmount(Decimal(rate)) ?? ""
+
+        let formatString = selectedRate.deliveryDays == 1 ? Localization.businessDaySingular : Localization.businessDaysPlural
+        let shippingDays = String(format: formatString, selectedRate.deliveryDays)
+
+        return selectedRate.title + "\n" + price + " - " + shippingDays
+    }
+
+    /// Returns the body of the Payment Methods cell.
+    /// Displays the payment method details if one is selected. Otherwise, displays a prompt to add a credit card.
+    ///
+    func getPaymentMethodBody() -> String {
+        guard let selectedPaymentMethod = shippingLabelAccountSettings?.paymentMethods.first(where: { $0.paymentMethodID == selectedPaymentMethodID }) else {
+            return Localization.paymentMethodPlaceholder
+        }
+
+        return String.localizedStringWithFormat(Localization.paymentMethodLabel, selectedPaymentMethod.cardDigits)
+    }
 }
 
 // MARK: - State Machine
@@ -182,6 +313,42 @@ private extension ShippingLabelFormViewModel {
             state.isValidatingDestinationAddress = validating
         }
     }
+
+    // Search the custom package based on the id
+    //
+    private func searchCustomPackage(id: String?) -> ShippingLabelCustomPackage? {
+        guard let packagesResponse = packagesResponse,
+              let packageID = id else {
+            return nil
+        }
+
+        for customPackage in packagesResponse.customPackages {
+            if customPackage.title == packageID {
+                return customPackage
+            }
+        }
+
+        return nil
+    }
+
+    // Search the predefined package based on the id
+    //
+    private func searchPredefinedPackage(id: String?) -> ShippingLabelPredefinedPackage? {
+        guard let packagesResponse = packagesResponse,
+              let packageID = id else {
+            return nil
+        }
+
+        for option in packagesResponse.predefinedOptions {
+            for predefinedPackage in option.predefinedPackages {
+                if predefinedPackage.id == packageID {
+                    return predefinedPackage
+                }
+            }
+        }
+
+        return nil
+    }
 }
 
 // MARK: - Remote API
@@ -221,8 +388,14 @@ extension ShippingLabelFormViewModel {
     /// Syncs account settings specific to shipping labels, such as the last selected package and payment methods.
     ///
     func syncShippingLabelAccountSettings() {
-        let action = ShippingLabelAction.synchronizeShippingLabelAccountSettings(siteID: order.siteID) { result in
-            if result.isFailure {
+        let action = ShippingLabelAction.synchronizeShippingLabelAccountSettings(siteID: order.siteID) { [weak self] result in
+            guard let self = self else { return }
+
+            switch result {
+            case .success(let value):
+                self.shippingLabelAccountSettings = value
+                self.handlePaymentMethodValueChanges(selectedPaymentMethodID: value.selectedPaymentMethodID, editable: false)
+            case .failure:
                 DDLogError("⛔️ Error synchronizing shipping label account settings")
             }
         }
@@ -247,5 +420,25 @@ extension ShippingLabelFormViewModel {
         case suggestedAddress
         case validationError(ShippingLabelAddressValidationError)
         case genericError(Error)
+    }
+}
+
+private extension ShippingLabelFormViewModel {
+    enum Localization {
+        static let packageDetailsPlaceholder = NSLocalizedString("Select the type of packaging you'd like to ship your items in",
+                                                                 comment: "Placeholder in Shipping Label form for the Package Details row.")
+        static let totalPackageWeight = NSLocalizedString("Total package weight: %1$@",
+                                                          comment: "Total package weight label in Shipping Label form. %1$@ is a placeholder for the weight")
+        static let carrierAndRatesPlaceholder = NSLocalizedString("Select your shipping carrier and rates",
+                                                                  comment: "Placeholder in Shipping Label form for the Carrier and Rates row.")
+        static let businessDaySingular = NSLocalizedString("%1$d business day",
+                                                           comment: "Singular format of number of business day in Shipping Labels > Carrier and Rates")
+        static let businessDaysPlural = NSLocalizedString("%1$d business days",
+                                                          comment: "Plural format of number of business days in Shipping Labels > Carrier and Rates")
+        static let paymentMethodPlaceholder = NSLocalizedString("Add a new credit card",
+                                                                comment: "Placeholder in Shipping Label form for the Payment Method row.")
+        static let paymentMethodLabel =
+            NSLocalizedString("Credit card ending in %1$@",
+                              comment: "Selected credit card in Shipping Label form. %1$@ is a placeholder for the last four digits of the credit card.")
     }
 }

@@ -250,27 +250,6 @@ extension Order {
         )
     }
 }
-extension OrderCount {
-    /// Returns a "ready to use" type filled with fake values.
-    ///
-    public static func fake() -> OrderCount {
-        .init(
-            siteID: .fake(),
-            items: .fake()
-        )
-    }
-}
-extension OrderCountItem {
-    /// Returns a "ready to use" type filled with fake values.
-    ///
-    public static func fake() -> OrderCountItem {
-        .init(
-            slug: .fake(),
-            name: .fake(),
-            total: .fake()
-        )
-    }
-}
 extension OrderCouponLine {
     /// Returns a "ready to use" type filled with fake values.
     ///
@@ -1020,6 +999,20 @@ extension ShippingLabelCustomPackage {
             dimensions: .fake(),
             boxWeight: .fake(),
             maxWeight: .fake()
+        )
+    }
+}
+extension ShippingLabelPackageSelected {
+    /// Returns a "ready to use" type filled with fake values.
+    ///
+    public static func fake() -> ShippingLabelPackageSelected {
+        .init(
+            boxID: .fake(),
+            length: .fake(),
+            width: .fake(),
+            height: .fake(),
+            weight: .fake(),
+            isLetter: .fake()
         )
     }
 }

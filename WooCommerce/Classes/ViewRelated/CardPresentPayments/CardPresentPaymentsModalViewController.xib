@@ -19,6 +19,7 @@
                 <outlet property="heightConstraint" destination="n7H-7U-izh" id="cbE-Eb-VuR"/>
                 <outlet property="imageView" destination="Osv-Wo-lxW" id="yIN-vL-DOA"/>
                 <outlet property="mainStackView" destination="jIt-xb-rrN" id="mSC-3J-47R"/>
+                <outlet property="primaryAndSecondaryActionButtonsStackView" destination="mhI-fa-Yzw" id="PV0-au-WIx"/>
                 <outlet property="primaryButton" destination="ZHa-is-GJK" id="wzn-TJ-1Sm"/>
                 <outlet property="secondaryButton" destination="9Ap-Te-Fsi" id="07U-PT-JrQ"/>
                 <outlet property="topSubtitleLabel" destination="aVs-Lf-QTr" id="uKV-ox-li8"/>
@@ -32,34 +33,44 @@
             <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
-                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="8Tg-Q2-wkH" userLabel="WrapperView">
-                    <rect key="frame" x="31" y="162.5" width="352" height="581"/>
+                <view contentMode="scaleToFill" verticalHuggingPriority="251" verticalCompressionResistancePriority="751" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="8Tg-Q2-wkH" userLabel="WrapperView">
+                    <rect key="frame" x="67" y="195.5" width="280" height="515"/>
                     <subviews>
-                        <stackView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="251" axis="vertical" alignment="center" spacing="32" translatesAutoresizingMaskIntoConstraints="NO" id="jIt-xb-rrN">
-                            <rect key="frame" x="20" y="32" width="312" height="517"/>
+                        <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" alignment="center" spacing="32" translatesAutoresizingMaskIntoConstraints="NO" id="jIt-xb-rrN">
+                            <rect key="frame" x="20" y="23" width="240" height="609"/>
                             <subviews>
-                                <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Q0r-qo-iZS">
-                                    <rect key="frame" x="135.5" y="0.0" width="41.5" height="49"/>
+                                <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Q0r-qo-iZS">
+                                    <rect key="frame" x="0.0" y="0.0" width="240" height="107"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oDv-zz-CTp">
-                                            <rect key="frame" x="0.0" y="0.0" width="41.5" height="20.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="240" height="20.5"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                             <nil key="textColor"/>
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="aVs-Lf-QTr">
-                                            <rect key="frame" x="0.0" y="28.5" width="41.5" height="20.5"/>
+                                            <rect key="frame" x="0.0" y="28.5" width="240" height="20.5"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                             <nil key="textColor"/>
                                             <nil key="highlightedColor"/>
                                         </label>
+                                        <view contentMode="scaleToFill" verticalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5mK-U1-v04">
+                                            <rect key="frame" x="0.0" y="57" width="240" height="50"/>
+                                        </view>
                                     </subviews>
                                 </stackView>
-                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="249" verticalHuggingPriority="249" horizontalCompressionResistancePriority="749" verticalCompressionResistancePriority="749" image="woo-celebration" translatesAutoresizingMaskIntoConstraints="NO" id="Osv-Wo-lxW">
-                                    <rect key="frame" x="89" y="81" width="134" height="117"/>
+                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" ambiguous="YES" image="woo-celebration" translatesAutoresizingMaskIntoConstraints="NO" id="Osv-Wo-lxW">
+                                    <rect key="frame" x="53" y="139" width="134" height="117"/>
+                                    <constraints>
+                                        <constraint firstAttribute="width" constant="134" id="Oee-WK-ZJ7"/>
+                                        <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="117" id="zSI-Cl-Ev7"/>
+                                    </constraints>
                                 </imageView>
-                                <stackView opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="751" axis="vertical" spacing="16" translatesAutoresizingMaskIntoConstraints="NO" id="k73-qi-GuD">
-                                    <rect key="frame" x="135.5" y="230" width="41.5" height="57"/>
+                                <view contentMode="scaleToFill" verticalHuggingPriority="251" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hgv-Qt-eaK">
+                                    <rect key="frame" x="0.0" y="288" width="240" height="50"/>
+                                </view>
+                                <stackView opaque="NO" contentMode="scaleToFill" verticalCompressionResistancePriority="751" ambiguous="YES" axis="vertical" spacing="16" translatesAutoresizingMaskIntoConstraints="NO" id="k73-qi-GuD">
+                                    <rect key="frame" x="99.5" y="370" width="41.5" height="57"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" horizontalCompressionResistancePriority="751" verticalCompressionResistancePriority="751" text="Label" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="oAj-lv-0k9">
                                             <rect key="frame" x="0.0" y="0.0" width="41.5" height="20.5"/>
@@ -75,50 +86,55 @@
                                         </label>
                                     </subviews>
                                 </stackView>
-                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="10Z-y1-ZQ6" userLabel="Action Background View">
-                                    <rect key="frame" x="0.0" y="319" width="312" height="198"/>
+                                <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="10Z-y1-ZQ6" userLabel="Action Background View">
+                                    <rect key="frame" x="0.0" y="459" width="240" height="150"/>
                                     <subviews>
-                                        <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="mhI-fa-Yzw">
-                                            <rect key="frame" x="16" y="20" width="280" height="170"/>
+                                        <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" translatesAutoresizingMaskIntoConstraints="NO" id="hug-zI-jgN">
+                                            <rect key="frame" x="0.0" y="0.0" width="240" height="150"/>
                                             <subviews>
-                                                <button opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ZHa-is-GJK" userLabel="secondary action button">
-                                                    <rect key="frame" x="0.0" y="0.0" width="280" height="40"/>
-                                                    <constraints>
-                                                        <constraint firstAttribute="height" constant="40" id="Gcd-Af-CS9"/>
-                                                    </constraints>
-                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="16"/>
-                                                    <state key="normal" title="Primary Action Button">
-                                                        <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                    </state>
-                                                    <userDefinedRuntimeAttributes>
-                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="isPrimary" value="YES"/>
-                                                    </userDefinedRuntimeAttributes>
-                                                </button>
-                                                <button opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9Ap-Te-Fsi" userLabel="Action Button">
-                                                    <rect key="frame" x="0.0" y="60" width="280" height="40"/>
-                                                    <constraints>
-                                                        <constraint firstAttribute="height" constant="40" id="ju1-aE-m26"/>
-                                                    </constraints>
-                                                    <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="16"/>
-                                                    <state key="normal" title="Secondary Action Button">
-                                                        <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                    </state>
-                                                    <userDefinedRuntimeAttributes>
-                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="isPrimary" value="NO"/>
-                                                    </userDefinedRuntimeAttributes>
-                                                </button>
+                                                <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="20" translatesAutoresizingMaskIntoConstraints="NO" id="mhI-fa-Yzw">
+                                                    <rect key="frame" x="0.0" y="0.0" width="240" height="100"/>
+                                                    <subviews>
+                                                        <button opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ZHa-is-GJK" userLabel="secondary action button">
+                                                            <rect key="frame" x="0.0" y="0.0" width="240" height="40"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="40" id="Gcd-Af-CS9"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="16"/>
+                                                            <state key="normal" title="Primary Action Button">
+                                                                <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </state>
+                                                            <userDefinedRuntimeAttributes>
+                                                                <userDefinedRuntimeAttribute type="boolean" keyPath="isPrimary" value="YES"/>
+                                                            </userDefinedRuntimeAttributes>
+                                                        </button>
+                                                        <button opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="9Ap-Te-Fsi" userLabel="Action Button">
+                                                            <rect key="frame" x="0.0" y="60" width="240" height="40"/>
+                                                            <constraints>
+                                                                <constraint firstAttribute="height" constant="40" id="ju1-aE-m26"/>
+                                                            </constraints>
+                                                            <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="16"/>
+                                                            <state key="normal" title="Secondary Action Button">
+                                                                <color key="titleColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                            </state>
+                                                            <userDefinedRuntimeAttributes>
+                                                                <userDefinedRuntimeAttribute type="boolean" keyPath="isPrimary" value="NO"/>
+                                                            </userDefinedRuntimeAttributes>
+                                                        </button>
+                                                    </subviews>
+                                                </stackView>
                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="maO-19-PuQ">
-                                                    <rect key="frame" x="0.0" y="120" width="280" height="50"/>
+                                                    <rect key="frame" x="0.0" y="100" width="240" height="50"/>
                                                     <state key="normal" title="Button"/>
                                                 </button>
                                             </subviews>
                                         </stackView>
                                     </subviews>
                                     <constraints>
-                                        <constraint firstAttribute="trailing" secondItem="mhI-fa-Yzw" secondAttribute="trailing" constant="16" id="8gH-vs-D9H"/>
-                                        <constraint firstAttribute="bottomMargin" secondItem="mhI-fa-Yzw" secondAttribute="bottom" id="PGb-Bi-220"/>
-                                        <constraint firstItem="mhI-fa-Yzw" firstAttribute="top" secondItem="10Z-y1-ZQ6" secondAttribute="top" constant="20" id="elI-Eo-HER"/>
-                                        <constraint firstItem="mhI-fa-Yzw" firstAttribute="leading" secondItem="10Z-y1-ZQ6" secondAttribute="leading" constant="16" id="vz3-FU-z4g"/>
+                                        <constraint firstAttribute="bottom" secondItem="hug-zI-jgN" secondAttribute="bottom" id="P73-KH-Twd"/>
+                                        <constraint firstAttribute="trailing" secondItem="hug-zI-jgN" secondAttribute="trailing" id="Z9a-ud-2in"/>
+                                        <constraint firstItem="hug-zI-jgN" firstAttribute="leading" secondItem="10Z-y1-ZQ6" secondAttribute="leading" id="ccx-D4-ym0"/>
+                                        <constraint firstItem="hug-zI-jgN" firstAttribute="top" secondItem="10Z-y1-ZQ6" secondAttribute="top" id="xbt-fC-wpt"/>
                                     </constraints>
                                 </view>
                             </subviews>
@@ -127,12 +143,13 @@
                     <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     <constraints>
                         <constraint firstItem="jIt-xb-rrN" firstAttribute="leading" secondItem="8Tg-Q2-wkH" secondAttribute="leading" constant="20" id="80k-pZ-tsR"/>
-                        <constraint firstItem="jIt-xb-rrN" firstAttribute="top" secondItem="8Tg-Q2-wkH" secondAttribute="top" constant="32" id="JLA-XJ-MiD"/>
-                        <constraint firstItem="jIt-xb-rrN" firstAttribute="height" secondItem="8Tg-Q2-wkH" secondAttribute="height" constant="-64" id="VJR-wO-lUP"/>
-                        <constraint firstAttribute="bottom" secondItem="jIt-xb-rrN" secondAttribute="bottom" constant="32" id="lVZ-pu-Fmb"/>
-                        <constraint firstAttribute="height" priority="250" constant="581" id="n7H-7U-izh"/>
+                        <constraint firstItem="jIt-xb-rrN" firstAttribute="top" secondItem="8Tg-Q2-wkH" secondAttribute="top" constant="23" id="JLA-XJ-MiD"/>
+                        <constraint firstItem="jIt-xb-rrN" firstAttribute="centerY" secondItem="8Tg-Q2-wkH" secondAttribute="centerY" id="TwW-0l-SVp"/>
+                        <constraint firstItem="jIt-xb-rrN" firstAttribute="height" relation="lessThanOrEqual" secondItem="8Tg-Q2-wkH" secondAttribute="height" constant="-46" id="VJR-wO-lUP"/>
+                        <constraint firstAttribute="bottom" secondItem="jIt-xb-rrN" secondAttribute="bottom" constant="23" id="lVZ-pu-Fmb"/>
+                        <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="382" id="n7H-7U-izh"/>
                         <constraint firstItem="jIt-xb-rrN" firstAttribute="centerX" secondItem="8Tg-Q2-wkH" secondAttribute="centerX" id="p6Y-jJ-KuU"/>
-                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="280" id="uaz-2N-7M4"/>
+                        <constraint firstAttribute="width" constant="280" id="uaz-2N-7M4"/>
                         <constraint firstAttribute="trailing" secondItem="jIt-xb-rrN" secondAttribute="trailing" constant="20" id="ufT-Yf-gsb"/>
                     </constraints>
                 </view>

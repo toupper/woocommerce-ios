@@ -11,6 +11,7 @@ final class CardPresentPaymentsModalViewController: UIViewController {
 
     @IBOutlet weak var containerView: UIView!
     @IBOutlet weak var mainStackView: UIStackView!
+    @IBOutlet weak var primaryAndSecondaryActionButtonsStackView: UIStackView!
     @IBOutlet private weak var topTitleLabel: UILabel!
     @IBOutlet private weak var topSubtitleLabel: UILabel!
     @IBOutlet private weak var bottomTitleLabel: UILabel!
@@ -21,7 +22,6 @@ final class CardPresentPaymentsModalViewController: UIViewController {
     @IBOutlet weak var auxiliaryButton: UIButton!
 
     @IBOutlet private weak var imageView: UIImageView!
-    @IBOutlet private weak var extraInfoButton: UIButton!
 
     @IBOutlet private weak var actionButtonsView: UIView!
     @IBOutlet private weak var bottomLabels: UIStackView!
@@ -62,16 +62,22 @@ final class CardPresentPaymentsModalViewController: UIViewController {
 
     private func resetHeightAndWidth() {
         if traitCollection.containsTraits(in: UITraitCollection(verticalSizeClass: .compact)) {
-            mainStackView.axis = .horizontal
+            //mainStackView.axis = .horizontal
+            primaryAndSecondaryActionButtonsStackView.axis = .horizontal
+            imageView.isHidden = true
+            mainStackView.distribution = .fillProportionally
             heightConstraint.constant = Constants.modalWidth
             widthConstraint.constant = Constants.modalHeight
         } else {
-            mainStackView.axis = .vertical
+            //mainStackView.axis = .vertical
+            print("===== setting height again")
+            primaryAndSecondaryActionButtonsStackView.axis = .vertical
+            imageView.isHidden = false
+            mainStackView.distribution = .fillProportionally
             heightConstraint.constant = Constants.modalHeight
             widthConstraint.constant = Constants.modalWidth
         }
 
-        mainStackView.distribution = .fill
         heightConstraint.priority = .defaultHigh
         widthConstraint.priority = .defaultHigh
     }

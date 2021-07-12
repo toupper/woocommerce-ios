@@ -58,7 +58,7 @@ final class OrderDetailsViewController: UIViewController {
     /// Orchestrates what needs to be presented in the modal views
     /// that provide user-facing feedback about the card present payment process.
     private lazy var paymentAlerts: OrderDetailsPaymentAlerts = {
-        OrderDetailsPaymentAlerts()
+        OrderDetailsPaymentAlerts(presentingController: self)
     }()
 
     /// Subscription that listens for connected readers while we are trying to connect to one to capture payment
@@ -106,16 +106,6 @@ final class OrderDetailsViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         tableView.updateHeaderHeight()
-    }
-
-    private func syncTrackingsHidingAddButtonIfNecessary() {
-        syncTracking { [weak self] error in
-            if error == nil {
-                self?.viewModel.trackingIsReachable = true
-            }
-
-            self?.reloadTableViewSectionsAndData()
-        }
     }
 }
 
@@ -345,7 +335,7 @@ private extension OrderDetailsViewController {
         }
 
         group.enter()
-        syncTracking { _ in
+        syncTrackingsEnablingAddButtonIfReachable {
             group.leave()
         }
 
@@ -355,9 +345,8 @@ private extension OrderDetailsViewController {
         }
 
         group.enter()
-        checkCardPresentPaymentEligibility {
-            group.leave()
-        }
+        refreshCardPresentPaymentEligibility()
+        group.leave()
 
         group.enter()
         syncSavedReceipts {_ in
@@ -412,12 +401,18 @@ private extension OrderDetailsViewController {
     }
 
     func syncSavedReceipts(onCompletion: ((Error?) -> ())? = nil) {
-        guard ServiceLocator.featureFlagService.isFeatureFlagEnabled(.cardPresentPayments) else {
-            onCompletion?(nil)
-            return
-        }
-
         viewModel.syncSavedReceipts(onCompletion: onCompletion)
+    }
+
+    func syncTrackingsEnablingAddButtonIfReachable(onCompletion: (() -> Void)? = nil) {
+        syncTracking { [weak self] error in
+            if error == nil {
+                self?.viewModel.trackingIsReachable = true
+            }
+
+            self?.reloadTableViewSectionsAndData()
+            onCompletion?()
+        }
     }
 
     func checkShippingLabelCreationEligibility(onCompletion: (() -> Void)? = nil) {
@@ -427,11 +422,8 @@ private extension OrderDetailsViewController {
         }
     }
 
-    func checkCardPresentPaymentEligibility(onCompletion: (() -> Void)? = nil) {
-        viewModel.checkCardPaymentEligibility { [weak self] in
-            self?.reloadTableViewSectionsAndData()
-            onCompletion?()
-        }
+    func refreshCardPresentPaymentEligibility() {
+        viewModel.refreshCardPresentPaymentEligibility()
     }
 
     func checkOrderAddOnFeatureSwitchState(onCompletion: (() -> Void)? = nil) {
@@ -619,9 +611,13 @@ private extension OrderDetailsViewController {
     }
 
     private func collectPaymentForCurrentOrder() {
-        paymentAlerts.readerIsReady(from: self,
-                                    title: viewModel.collectPaymentFrom,
-                                    amount: viewModel.order.total)
+        let currencyFormatter = CurrencyFormatter(currencySettings: ServiceLocator.currencySettings)
+        let currencyCode = ServiceLocator.currencySettings.currencyCode
+        let unit = ServiceLocator.currencySettings.symbol(from: currencyCode)
+        let value = currencyFormatter.formatAmount(viewModel.order.total, with: unit) ?? ""
+
+        paymentAlerts.readerIsReady(title: viewModel.collectPaymentFrom,
+                                    amount: value)
 
         ServiceLocator.analytics.track(.collectPaymentTapped)
         viewModel.collectPayment { [weak self] readerEventMessage in
@@ -644,7 +640,7 @@ private extension OrderDetailsViewController {
             case .success(let receiptParameters):
                 ServiceLocator.analytics.track(.collectPaymentSuccess)
                 self.syncOrderAfterPaymentCollection {
-                    self.checkCardPresentPaymentEligibility()
+                    self.refreshCardPresentPaymentEligibility()
                 }
 
                 self.paymentAlerts.success(printReceipt: {

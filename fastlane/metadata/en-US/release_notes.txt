@@ -1,3 +1,3 @@
-We heard that orders containing multiple configurations of the same variable product can be confusing to fulfill with the app. This update fixes that and makes those items appear separately, making it easier to read. In that same spirit, orders with multiple shipments from the WooCommerce Shipping & Tax extension will show as separate sections.
+Due to popular demand, we’ve brought back the order fulfillment screen when tapping on Mark Order Complete. Thank you to everyone who reached out to let us know your interest in that functionality!
 
-If the app has trouble loading data, we now show a helpful message with instructions on how to reach out for help. Most times, it’s a plugin causing issues, but we can help walk you through resolving it!
+We’ve added initial support for creating shipping labels to the app! Want to give it a try? Install and activate the WooCommerce Shipping & Tax extension in your store. Right now, we support merchants in the USA shipping to USA addresses. We welcome your feedback!

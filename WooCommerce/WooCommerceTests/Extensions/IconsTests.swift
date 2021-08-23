@@ -230,6 +230,10 @@ final class IconsTests: XCTestCase {
         XCTAssertNotNil(UIImage.cardReaderFound)
     }
 
+    func test_payment_card_reader_connect_image() {
+        XCTAssertNotNil(UIImage.cardReaderConnect)
+    }
+
     func test_payment_card_reader_connecting_image() {
         XCTAssertNotNil(UIImage.cardReaderConnecting)
     }
@@ -244,6 +248,10 @@ final class IconsTests: XCTestCase {
 
     func test_payment_error_image() {
         XCTAssertNotNil(UIImage.paymentErrorImage)
+    }
+
+    func test_payments_plugin_not_nil() {
+        XCTAssertNotNil(UIImage.paymentsPlugin)
     }
 
     func test_print_icon_in_not_nil() {
@@ -326,6 +334,10 @@ final class IconsTests: XCTestCase {
 
     func test_shippingLabelCreationInfoImage_is_not_nil() {
         XCTAssertNotNil(UIImage.shippingLabelCreationInfoImage)
+    }
+
+    func test_globeImage_is_not_nil() {
+        XCTAssertNotNil(UIImage.globeImage)
     }
 
     func testSpamImageIconIsNotNil() {

@@ -22,13 +22,21 @@ enum FeatureFlag: Int {
     ///
     case shippingLabelsM2M3
 
-    /// Shipping labels - Milestone 4
+    /// Shipping labels - International Shipping
     ///
-    case shippingLabelsM4
+    case shippingLabelsInternational
 
-    /// Site Plugin list entry point on Settings screen
+    /// Shipping labels - Add payment methods
     ///
-    case sitePlugins
+    case shippingLabelsAddPaymentMethods
+
+    /// Shipping labels - Add custom packages
+    ///
+    case shippingLabelsAddCustomPackages
+
+    /// Shipping labels - Multi-package support
+    ///
+    case shippingLabelsMultiPackage
 
     /// Card-Present Payments Onboarding
     ///

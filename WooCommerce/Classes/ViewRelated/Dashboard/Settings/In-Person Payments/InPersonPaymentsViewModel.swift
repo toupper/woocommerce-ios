@@ -9,7 +9,13 @@ final class InPersonPaymentsViewModel: ObservableObject {
     /// Initializes the view model for a specific site
     ///
     init() {
-        state = useCase.checkOnboardingState()
+        state = useCase.state
+        useCase.$state
+            // Debounce values to prevent the loading screen flashing when there is no connection
+            .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main)
+            .removeDuplicates()
+            .handleEvents(receiveOutput: trackState(_:))
+            .assign(to: &$state)
         refresh()
     }
 
@@ -23,11 +29,16 @@ final class InPersonPaymentsViewModel: ObservableObject {
     /// Synchronizes the required data from the server and recalculates the state
     ///
     func refresh() {
-        useCase.synchronizeRequiredData { [weak self] in
-            guard let self = self else {
-                return
-            }
-            self.state = self.useCase.checkOnboardingState()
-        }
+        useCase.refresh()
     }
+}
+
+private func trackState(_ state: CardPresentPaymentOnboardingState) {
+    guard let reason = state.reasonForAnalytics else {
+        return
+    }
+    let properties = [
+        "reason": reason
+    ]
+    ServiceLocator.analytics.track(.cardPresentOnboardingNotCompleted, withProperties: properties)
 }

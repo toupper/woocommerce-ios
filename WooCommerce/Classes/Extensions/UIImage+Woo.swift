@@ -103,6 +103,12 @@ extension UIImage {
         return UIImage.gridicon(.chevronRight)
     }
 
+    /// Chevron Pointing Left
+    ///
+    static var chevronLeftImage: UIImage {
+        return UIImage.gridicon(.chevronLeft)
+    }
+
     /// Chevron Pointing Down
     ///
     static var chevronDownImage: UIImage {
@@ -453,6 +459,12 @@ extension UIImage {
     ///
     static var paymentErrorImage: UIImage {
         return UIImage(named: "woo-payments-error")!
+    }
+
+    /// Payments loading
+    ///
+    static var paymentsLoading: UIImage {
+        return UIImage(named: "woo-payments-loading")!
     }
 
     /// Payments plugin

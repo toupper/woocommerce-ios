@@ -192,11 +192,18 @@ final class OrderDetailsDataSource: NSObject {
 
     private let imageService: ImageService = ServiceLocator.imageService
 
+    /// Indicates if the order editing feature is enabled or not
+    /// Allows editing notes, shipping & billing addresses.
+    ///
+    private let orderEditingEnabled: Bool
+
     init(order: Order,
-         storageManager: StorageManagerType = ServiceLocator.storageManager) {
+         storageManager: StorageManagerType = ServiceLocator.storageManager,
+         orderEditingEnabled: Bool = ServiceLocator.featureFlagService.isFeatureFlagEnabled(.orderEditing)) {
         self.storageManager = storageManager
         self.order = order
         self.couponLines = order.coupons
+        self.orderEditingEnabled = orderEditingEnabled
 
         super.init()
     }
@@ -367,8 +374,12 @@ private extension OrderDetailsDataSource {
             NSLocalizedString("“%@”",
                               comment: "Customer note, wrapped in quotes"),
             customerNote)
-        cell.body = localizedBody
+        cell.body = customerNote.isNotEmpty ? localizedBody : " "
         cell.selectionStyle = .none
+
+        cell.onEditTapped = orderEditingEnabled ? { [weak self] in
+            self?.onCellAction?(.editCustomerNote, nil)
+        } : nil
     }
 
     private func configureBillingDetail(cell: WooBasicTableViewCell) {
@@ -938,7 +949,8 @@ extension OrderDetailsDataSource {
         let customerInformation: Section = {
             var rows: [Row] = []
 
-            if customerNote.isEmpty == false {
+            /// After `.orderEditing` is completed, this row should always be visible to let merchants update the customer note as required.
+            if orderEditingEnabled || customerNote.isEmpty == false {
                 rows.append(.customerNote)
             }
 
@@ -972,8 +984,9 @@ extension OrderDetailsDataSource {
             if shouldShowReceipts {
                 rows.append(.seeReceipt)
             }
-
-            if !isRefundedStatus && !isEligibleForCardPresentPayment {
+            let orderTotal = Double(order.total) ?? 0
+            let isEligibleForRefund = orderTotal > 0
+            if !isRefundedStatus && !isEligibleForCardPresentPayment && isEligibleForRefund {
                 rows.append(.issueRefundButton)
             }
 
@@ -1208,7 +1221,7 @@ extension OrderDetailsDataSource {
         static let payment = NSLocalizedString("Payment", comment: "Payment section title")
         static let notes = NSLocalizedString("Order Notes", comment: "Order notes section title")
         static let shippingLabelCreationInfoAction =
-            NSLocalizedString("Learn more about creating labels with your phone",
+            NSLocalizedString("Learn more about creating labels with your mobile device",
                               comment: "Title of button in order details > info link for creating a shipping label on the mobile device.")
         static let shippingLabelPackageFormat =
             NSLocalizedString("Package %d",
@@ -1222,7 +1235,7 @@ extension OrderDetailsDataSource {
             NSLocalizedString("%@ label refund requested",
                               comment: "Order refunded shipping label title. The string variable shows the shipping label service name (e.g. USPS).")
         static let shippingLabelPrintingInfoAction =
-            NSLocalizedString("Don’t know how to print from your phone?",
+            NSLocalizedString("Don’t know how to print from your mobile device?",
                               comment: "Title of button in order details > shipping label that shows the instructions on how to print " +
                                 "a shipping label on the mobile device.")
     }
@@ -1418,6 +1431,7 @@ extension OrderDetailsDataSource {
         case createShippingLabel
         case shippingLabelTrackingMenu(shippingLabel: ShippingLabel, sourceView: UIView)
         case viewAddOns(addOns: [OrderItemAttribute])
+        case editCustomerNote
     }
 
     struct Constants {

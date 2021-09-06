@@ -219,7 +219,7 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         shippingLabelFormViewModel.handleOriginAddressValueChanges(address: MockShippingLabelAddress.sampleAddress(phone: "0123456789", country: "US"),
                                                                    validated: true)
         shippingLabelFormViewModel.handleDestinationAddressValueChanges(address: MockShippingLabelAddress.sampleAddress(country: "VN"), validated: true)
-        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()])
+        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()], isValidated: true)
         shippingLabelFormViewModel.handleCarrierAndRatesValueChanges(selectedRate: MockShippingLabelCarrierRate.makeRate(),
                                                                      selectedSignatureRate: nil,
                                                                      selectedAdultSignatureRate: nil,
@@ -231,7 +231,7 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         shippingLabelFormViewModel.handlePackageDetailsValueChanges(selectedPackageID: expectedPackageID, totalPackageWeight: expectedPackageWeight)
 
         // Then
-        XCTAssertTrue(shippingLabelFormViewModel.customsForms.isEmpty)
+        XCTAssertEqual(shippingLabelFormViewModel.customsForms.first?.packageID, expectedPackageID)
         XCTAssertNil(shippingLabelFormViewModel.selectedRate)
 
         let rows = shippingLabelFormViewModel.state.sections.first?.rows
@@ -253,7 +253,7 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         shippingLabelFormViewModel.handleOriginAddressValueChanges(address: MockShippingLabelAddress.sampleAddress(phone: "0123456789", country: "US"),
                                                                    validated: true)
         shippingLabelFormViewModel.handleDestinationAddressValueChanges(address: MockShippingLabelAddress.sampleAddress(country: "VN"), validated: true)
-        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()])
+        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()], isValidated: true)
         shippingLabelFormViewModel.handleCarrierAndRatesValueChanges(selectedRate: MockShippingLabelCarrierRate.makeRate(),
                                                                      selectedSignatureRate: nil,
                                                                      selectedAdultSignatureRate: nil,
@@ -261,7 +261,7 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         XCTAssertNotNil(shippingLabelFormViewModel.selectedRate)
 
         // When
-        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()])
+        shippingLabelFormViewModel.handleCustomsFormsValueChanges(customsForms: [ShippingLabelCustomsForm.fake()], isValidated: true)
 
         // Then
         XCTAssertNil(shippingLabelFormViewModel.selectedRate)
@@ -361,13 +361,15 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         XCTAssertEqual(updatedRows?[2].displayMode, .editable)
     }
 
-    func test_validateAddress_returns_validation_error_when_missing_name() {
+    func test_validateAddress_returns_validation_error_when_missing_name_without_triggering_action() {
         // Given
+        let storesManager = MockStoresManager(sessionManager: .testingInstance)
         let expectedValidationError = ShippingLabelAddressValidationError(addressError: nil, generalError: "Name is required")
         let originAddress = Address.fake()
         let shippingLabelFormViewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
                                                                     originAddress: originAddress,
-                                                                    destinationAddress: nil)
+                                                                    destinationAddress: nil,
+                                                                    stores: storesManager)
 
         // When
         shippingLabelFormViewModel.validateAddress(type: .origin) { validationState, validationSuccess in
@@ -377,6 +379,55 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
             }
             XCTAssertEqual(error, expectedValidationError)
         }
+
+        // Then
+        let triggeredValidateAddressAction: Bool = {
+            var triggered = false
+            for action in storesManager.receivedActions {
+                if case ShippingLabelAction.validateAddress = action {
+                    triggered = true
+                    break
+                }
+            }
+            return triggered
+        }()
+        XCTAssertFalse(triggeredValidateAddressAction)
+    }
+
+    func test_validateAddress_triggers_validate_action_when_name_is_not_missing() {
+        // Given
+        let storesManager = MockStoresManager(sessionManager: .testingInstance)
+        let originAddress = Address(firstName: "Lorem",
+                                    lastName: "Ipsum",
+                                    company: nil,
+                                    address1: "",
+                                    address2: nil,
+                                    city: "",
+                                    state: "",
+                                    postcode: "",
+                                    country: "",
+                                    phone: nil,
+                                    email: nil)
+        let shippingLabelFormViewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(),
+                                                                    originAddress: originAddress,
+                                                                    destinationAddress: nil,
+                                                                    stores: storesManager)
+
+        // When
+        shippingLabelFormViewModel.validateAddress(type: .origin) { _, _ in }
+
+        // Then
+        let triggeredValidateAddressAction: Bool = {
+            var triggered = false
+            for action in storesManager.receivedActions {
+                if case ShippingLabelAction.validateAddress = action {
+                    triggered = true
+                    break
+                }
+            }
+            return triggered
+        }()
+        XCTAssertTrue(triggeredValidateAddressAction)
     }
 
     func test_handlePaymentMethodValueChanges_returns_updated_data_and_state_with_no_selected_payment_method() {
@@ -612,102 +663,6 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.customsFormRequired)
     }
 
-    func test_customsFormRequired_returns_false_for_shipping_from_US_to_domestic_terristories() {
-        // Given
-        let originAddress = Address(firstName: "Skylar",
-                                    lastName: "Ferry",
-                                    company: "Automattic Inc.",
-                                    address1: "60 29th Street #343",
-                                    address2: nil,
-                                    city: "San Francisco",
-                                    state: "CA",
-                                    postcode: "94121-2303",
-                                    country: "US",
-                                    phone: nil,
-                                    email: nil)
-        let destinationAddress = Address(firstName: "Skylar",
-                                         lastName: "Ferry",
-                                         company: "Automattic Inc.",
-                                         address1: "60 Main Street",
-                                         address2: nil,
-                                         city: "Random City",
-                                         state: "",
-                                         postcode: "",
-                                         country: "VI", // Virgin Islands
-                                         phone: nil,
-                                         email: nil)
-
-        // When
-        let viewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(), originAddress: originAddress, destinationAddress: destinationAddress)
-
-        // Then
-        XCTAssertFalse(viewModel.customsFormRequired)
-    }
-
-    func test_customsFormRequired_returns_false_for_shipping_from_domestic_terristories_to_US() {
-        // Given
-        let originAddress = Address(firstName: "Skylar",
-                                    lastName: "Ferry",
-                                    company: "Automattic Inc.",
-                                    address1: "60 Main Street",
-                                    address2: nil,
-                                    city: "Random City",
-                                    state: "",
-                                    postcode: "",
-                                    country: "VI", // Virgin Islands
-                                    phone: nil,
-                                    email: nil)
-        let destinationAddress = Address(firstName: "Skylar",
-                                         lastName: "Ferry",
-                                         company: "Automattic Inc.",
-                                         address1: "60 29th Street #343",
-                                         address2: nil,
-                                         city: "San Francisco",
-                                         state: "CA",
-                                         postcode: "94121-2303",
-                                         country: "US",
-                                         phone: nil,
-                                         email: nil)
-
-        // When
-        let viewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(), originAddress: originAddress, destinationAddress: destinationAddress)
-
-        // Then
-        XCTAssertFalse(viewModel.customsFormRequired)
-    }
-
-    func test_customsFormRequired_returns_true_for_shipping_from_domestic_terristories_to_other_international_country() {
-        // Given
-        let originAddress = Address(firstName: "Skylar",
-                                    lastName: "Ferry",
-                                    company: "Automattic Inc.",
-                                    address1: "60 Main Street",
-                                    address2: nil,
-                                    city: "Random City",
-                                    state: "",
-                                    postcode: "",
-                                    country: "VI", // Virgin Islands
-                                    phone: nil,
-                                    email: nil)
-        let destinationAddress = Address(firstName: "Skylar",
-                                         lastName: "Ferry",
-                                         company: "Automattic Inc.",
-                                         address1: "20 Hang Bong",
-                                         address2: nil,
-                                         city: "Hanoi",
-                                         state: "",
-                                         postcode: "",
-                                         country: "VN", // Vietnam
-                                         phone: nil,
-                                         email: nil)
-
-        // When
-        let viewModel = ShippingLabelFormViewModel(order: MockOrders().makeOrder(), originAddress: originAddress, destinationAddress: destinationAddress)
-
-        // Then
-        XCTAssertTrue(viewModel.customsFormRequired)
-    }
-
     func test_customs_row_is_not_present_initially_if_both_origin_and_destination_countries_are_US() {
         // Given
         let originAddress = Address(firstName: "Skylar",
@@ -884,13 +839,16 @@ final class ShippingLabelFormViewModelTests: XCTestCase {
         viewModel.handlePackageDetailsValueChanges(selectedPackageID: expectedPackageID, totalPackageWeight: "55")
 
         // Then
-        DispatchQueue.main.async {
-            let defaultForms = viewModel.customsForms
-            XCTAssertEqual(defaultForms.count, 1)
-            XCTAssertEqual(defaultForms.first?.packageID, expectedPackageID)
-            XCTAssertEqual(defaultForms.first?.items.count, 1)
-            XCTAssertEqual(defaultForms.first?.items.first?.productID, expectedProductID)
-        }
+        let defaultForms = viewModel.customsForms
+        XCTAssertEqual(defaultForms.count, 1)
+        XCTAssertEqual(defaultForms.first?.packageID, expectedPackageID)
+        XCTAssertEqual(defaultForms.first?.items.count, 1)
+        XCTAssertEqual(defaultForms.first?.items.first?.productID, expectedProductID)
+        XCTAssertEqual(defaultForms.first?.items.first?.weight, 0)
+        XCTAssertEqual(defaultForms.first?.items.first?.description, "")
+        XCTAssertEqual(defaultForms.first?.items.first?.hsTariffNumber, "")
+        XCTAssertEqual(defaultForms.first?.items.first?.value, 0)
+        XCTAssertEqual(defaultForms.first?.items.first?.originCountry, "")
     }
 }
 

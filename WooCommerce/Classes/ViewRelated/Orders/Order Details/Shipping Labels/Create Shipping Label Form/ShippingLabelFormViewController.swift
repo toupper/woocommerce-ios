@@ -423,9 +423,16 @@ private extension ShippingLabelFormViewController {
     }
 
     func displayCustomsFormListVC(customsForms: [ShippingLabelCustomsForm]) {
-        let vm = ShippingLabelCustomsFormListViewModel(order: viewModel.order, customsForms: viewModel.customsForms)
+        guard let countryCode = viewModel.destinationAddress?.country,
+              let country = viewModel.countries.first(where: { $0.code == countryCode }) else {
+            fatalError("⛔️ Destination country is not found")
+        }
+        let vm = ShippingLabelCustomsFormListViewModel(order: viewModel.order,
+                                                       customsForms: viewModel.customsForms,
+                                                       destinationCountry: country,
+                                                       countries: viewModel.countries)
         let formList = ShippingLabelCustomsFormList(viewModel: vm) { [weak self] forms in
-            self?.viewModel.handleCustomsFormsValueChanges(customsForms: forms)
+            self?.viewModel.handleCustomsFormsValueChanges(customsForms: forms, isValidated: true)
         }
         let hostingVC = UIHostingController(rootView: formList)
         navigationController?.show(hostingVC, sender: nil)

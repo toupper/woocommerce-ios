@@ -1,14 +1,27 @@
 import SwiftUI
 
 struct InPersonPaymentsLearnMore: View {
+    @Environment(\.customOpenURL) var customOpenURL
+
     var body: some View {
         HStack(alignment: .center, spacing: 20) {
             Image(uiImage: .infoOutlineImage)
-                .accentColor(Color(.lightGray))
-                .frame(width: 20, height: 20)
+                .resizable()
+                .foregroundColor(Color(.textSubtle))
+                .frame(width: iconSize, height: iconSize)
             AttributedText(Localization.learnMore)
-                .accentColor(Color(.textLink))
+                .font(.subheadline)
+                .attributedTextForegroundColor(Color(.textSubtle))
+                .attributedTextLinkColor(Color(.textLink))
+                .customOpenURL { url in
+                    ServiceLocator.analytics.track(.cardPresentOnboardingLearnMoreTapped)
+                    customOpenURL?(url)
+                }
         }
+    }
+
+    var iconSize: CGFloat {
+        UIFontMetrics(forTextStyle: .subheadline).scaledValue(for: 20)
     }
 }
 
@@ -23,7 +36,7 @@ private enum Localization {
         comment: "Generic error message when In-Person Payments is unavailable"
     )
 
-    static var learnMore: NSAttributedString {
+    static let learnMore: NSAttributedString = {
         let learnMoreText = NSLocalizedString(
             "<a href=\"https://woocommerce.com/payments\">Learn more</a> about accepting payments with your mobile device and ordering card readers",
             comment: "A label prompting users to learn more about card readers with an embedded hyperlink"
@@ -40,7 +53,7 @@ private enum Localization {
         learnMoreAttrText.addAttributes(learnMoreAttributes, range: range)
 
         return learnMoreAttrText
-    }
+    }()
 }
 
 struct InPersonPaymentsLearnMore_Previews: PreviewProvider {

@@ -55,6 +55,10 @@ final class IconsTests: XCTestCase {
         XCTAssertNotNil(UIImage.chevronImage)
     }
 
+    func testChevronLeftImageIconIsNotNil() {
+        XCTAssertNotNil(UIImage.chevronLeftImage)
+    }
+
     func testChevronDownImageIconIsNotNil() {
         XCTAssertNotNil(UIImage.chevronDownImage)
     }
@@ -248,6 +252,10 @@ final class IconsTests: XCTestCase {
 
     func test_payment_error_image() {
         XCTAssertNotNil(UIImage.paymentErrorImage)
+    }
+
+    func test_payments_loading_not_nil() {
+        XCTAssertNotNil(UIImage.paymentsLoading)
     }
 
     func test_payments_plugin_not_nil() {

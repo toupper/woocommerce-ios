@@ -1,10 +1,10 @@
 import SwiftUI
 
-struct InPersonPaymentsPluginNotActivatedView: View {
+struct InPersonPaymentsPluginNotActivated: View {
     let onRefresh: () -> Void
 
     var body: some View {
-        VStack {
+        ScrollableVStack {
             Spacer()
 
             VStack(alignment: .center, spacing: 42) {
@@ -26,7 +26,6 @@ struct InPersonPaymentsPluginNotActivatedView: View {
                 .padding(.bottom, 24.0)
             InPersonPaymentsLearnMore()
         }
-        .padding(24.0)
     }
 }
 
@@ -47,8 +46,8 @@ private enum Localization {
     )
 }
 
-struct InPersonPaymentsPluginNotActivatedView_Previews: PreviewProvider {
+struct InPersonPaymentsPluginNotActivated_Previews: PreviewProvider {
     static var previews: some View {
-        InPersonPaymentsPluginNotActivatedView(onRefresh: {})
+        InPersonPaymentsPluginNotActivated(onRefresh: {})
     }
 }

@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct InPersonPaymentsUnavailableView: View {
+struct InPersonPaymentsUnavailable: View {
     var body: some View {
-        VStack {
+        ScrollableVStack {
             Spacer()
 
             VStack(alignment: .center, spacing: 42) {
@@ -13,7 +13,7 @@ struct InPersonPaymentsUnavailableView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(height: 180.0)
-                Text(Localization.acceptCash)
+                Text(Localization.message)
                     .font(.callout)
                     .multilineTextAlignment(.center)
             }
@@ -22,24 +22,23 @@ struct InPersonPaymentsUnavailableView: View {
 
             InPersonPaymentsLearnMore()
         }
-        .padding(24.0)
     }
 }
 
 private enum Localization {
     static let unavailable = NSLocalizedString(
-        "In-Person Payments is currently unavailable",
+        "Unable to verify In-Person Payments for this store",
         comment: "Title for the error screen when In-Person Payments is unavailable"
     )
 
-    static let acceptCash = NSLocalizedString(
-        "You can still accept in-person cash payments by enabling the “Cash on Delivery” payment method on your store.",
+    static let message = NSLocalizedString(
+        "We're sorry, we were unable to verify In-Person Payments for this store.",
         comment: "Generic error message when In-Person Payments is unavailable"
     )
 }
 
-struct InPersonPaymentsUnavailableView_Previews: PreviewProvider {
+struct InPersonPaymentsUnavailable_Previews: PreviewProvider {
     static var previews: some View {
-        InPersonPaymentsUnavailableView()
+        InPersonPaymentsUnavailable()
     }
 }

@@ -159,8 +159,7 @@ extension ShippingLabelFormViewController: UITableViewDelegate {
         case Row(type: .shipTo, dataState: .validated, displayMode: .editable):
             displayEditAddressFormVC(address: viewModel.destinationAddress, validationError: nil, type: .destination)
         case Row(type: .packageDetails, dataState: .validated, displayMode: .editable):
-            displayPackageDetailsVC(selectedPackageID: viewModel.selectedPackageID,
-                                    totalPackageWeight: viewModel.totalPackageWeight)
+            displayPackageDetailsVC(inputPackages: viewModel.selectedPackagesDetails)
         case Row(type: .customs, dataState: .validated, displayMode: .editable):
             displayCustomsFormListVC(customsForms: viewModel.customsForms)
         case Row(type: .shippingCarrierAndRates, dataState: .validated, displayMode: .editable):
@@ -243,6 +242,14 @@ private extension ShippingLabelFormViewController {
                        buttonTitle: Localization.continueButtonInCells) { [weak self] in
             guard let self = self else { return }
 
+            // Skip remote validation and navigate to edit address
+            // if customs form is required and phone number is not found.
+            if self.viewModel.customsFormRequired,
+               let destinationAddress = self.viewModel.destinationAddress,
+               destinationAddress.phone.isEmpty {
+                return self.displayEditAddressFormVC(address: destinationAddress, validationError: nil, type: .destination)
+            }
+
             self.viewModel.validateAddress(type: .destination) { [weak self] (validationState, response) in
                 guard let self = self else { return }
                 let shippingLabelAddress = self.viewModel.destinationAddress
@@ -270,8 +277,8 @@ private extension ShippingLabelFormViewController {
                        title: Localization.packageDetailsCellTitle,
                        body: viewModel.getPackageDetailsBody(),
                        buttonTitle: Localization.continueButtonInCells) { [weak self] in
-            self?.displayPackageDetailsVC(selectedPackageID: self?.viewModel.selectedPackageID,
-                                          totalPackageWeight: self?.viewModel.totalPackageWeight)
+            guard let self = self else { return }
+            self.displayPackageDetailsVC(inputPackages: self.viewModel.selectedPackagesDetails)
         }
     }
 
@@ -361,12 +368,12 @@ private extension ShippingLabelFormViewController {
             ServiceLocator.noticePresenter.enqueue(notice: notice)
             return
         }
-        let phoneNumberRequired = type == .origin && viewModel.customsFormRequired
+        let isPhoneNumberRequired = viewModel.customsFormRequired
         let shippingAddressVC = ShippingLabelAddressFormViewController(
             siteID: viewModel.siteID,
             type: type,
             address: address,
-            phoneNumberRequired: phoneNumberRequired,
+            phoneNumberRequired: isPhoneNumberRequired,
             validationError: validationError,
             countries: viewModel.filteredCountries(for: type),
             completion: { [weak self] (newShippingLabelAddress) in
@@ -409,17 +416,34 @@ private extension ShippingLabelFormViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    func displayPackageDetailsVC(selectedPackageID: String?, totalPackageWeight: String?) {
-        let vm = ShippingLabelPackageDetailsViewModel(order: viewModel.order,
+    func displayPackageDetailsVC(inputPackages: [ShippingLabelPackageAttributes]) {
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.shippingLabelsMultiPackage) {
+            let vm = ShippingLabelPackagesFormViewModel(order: viewModel.order,
+                                                        packagesResponse: viewModel.packagesResponse,
+                                                        selectedPackages: inputPackages,
+                                                        onSelectionCompletion: { [weak self] selectedPackages in
+                                                            self?.viewModel.handlePackageDetailsValueChanges(details: selectedPackages)
+                                                        },
+                                                        onPackageSyncCompletion: { [weak self] (packagesResponse) in
+                                                          self?.viewModel.handleNewPackagesResponse(packagesResponse: packagesResponse)
+                                                        })
+            let packagesForm = ShippingLabelPackagesForm(viewModel: vm)
+            let hostingVC = UIHostingController(rootView: packagesForm)
+            navigationController?.show(hostingVC, sender: nil)
+        } else {
+            let vm = ShippingLabelPackageDetailsViewModel(order: viewModel.order,
                                                       packagesResponse: viewModel.packagesResponse,
-                                                      selectedPackageID: selectedPackageID,
-                                                      totalWeight: totalPackageWeight)
-        let packageDetails = ShippingLabelPackageDetails(viewModel: vm) { [weak self] (selectedPackageID, totalPackageWeight) in
-            self?.viewModel.handlePackageDetailsValueChanges(selectedPackageID: selectedPackageID, totalPackageWeight: totalPackageWeight)
+                                                      selectedPackages: inputPackages,
+                                                      onPackageSyncCompletion: { [weak self] (packagesResponse) in
+                                                        self?.viewModel.handleNewPackagesResponse(packagesResponse: packagesResponse)
+                                                      },
+                                                      onPackageSaveCompletion: { [weak self] (selectedPackages) in
+                                                        self?.viewModel.handlePackageDetailsValueChanges(details: selectedPackages)
+                                                      })
+            let packageDetails = ShippingLabelPackageDetails(viewModel: vm)
+            let hostingVC = UIHostingController(rootView: packageDetails)
+            navigationController?.show(hostingVC, sender: nil)
         }
-
-        let hostingVC = UIHostingController(rootView: packageDetails)
-        navigationController?.show(hostingVC, sender: nil)
     }
 
     func displayCustomsFormListVC(customsForms: [ShippingLabelCustomsForm]) {
@@ -443,14 +467,14 @@ private extension ShippingLabelFormViewController {
                                    selectedAdultSignatureRate: ShippingLabelCarrierRate?) {
         guard let originAddress = viewModel.originAddress,
               let destinationAddress = viewModel.destinationAddress,
-              let selectedPackage = viewModel.selectedPackage else {
+              viewModel.selectedPackages.isNotEmpty else {
             return
         }
 
         let vm = ShippingLabelCarriersViewModel(order: viewModel.order,
                                                 originAddress: originAddress,
                                                 destinationAddress: destinationAddress,
-                                                packages: [selectedPackage],
+                                                packages: viewModel.selectedPackages,
                                                 selectedRate: selectedRate,
                                                 selectedSignatureRate: selectedSignatureRate,
                                                 selectedAdultSignatureRate: selectedAdultSignatureRate)
@@ -492,9 +516,10 @@ private extension ShippingLabelFormViewController {
 
     /// Removes the Shipping Label Form from the navigation stack and displays the Print Shipping Label screen.
     /// This prevents navigating back to the purchase form after successfully purchasing the label.
+    /// TODO-4599: Update for multi-package support
     ///
     func displayPrintShippingLabelVC() {
-        guard let purchasedShippingLabel = viewModel.purchasedShippingLabel,
+        guard let purchasedShippingLabel = viewModel.purchasedShippingLabels.first,
               let navigationController = navigationController else {
             return
         }
@@ -505,7 +530,7 @@ private extension ShippingLabelFormViewController {
         }
         let printCoordinator = PrintShippingLabelCoordinator(shippingLabel: purchasedShippingLabel,
                                                              printType: .print,
-                                                             sourceViewController: navigationController,
+                                                             sourceNavigationController: navigationController,
                                                              onCompletion: onLabelSave)
         printCoordinator.showPrintUI()
     }

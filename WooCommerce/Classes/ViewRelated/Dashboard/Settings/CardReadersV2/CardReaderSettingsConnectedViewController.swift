@@ -18,6 +18,17 @@ final class CardReaderSettingsConnectedViewController: UIViewController, CardRea
     ///
     private var sections = [Section]()
 
+    /// Last known update view
+    private var updateInProgress: Bool = false
+
+    /// Update view controller
+    private var updateViewController: UpdateViewController?
+
+    /// Card Present Payments alerts
+    private lazy var paymentAlerts: OrderDetailsPaymentAlerts = {
+        OrderDetailsPaymentAlerts(presentingController: self)
+    }()
+
     /// Accept our viewmodel
     ///
     func configure(viewModel: CardReaderSettingsPresentedViewModel) {
@@ -56,9 +67,6 @@ final class CardReaderSettingsConnectedViewController: UIViewController, CardRea
 //
 private extension CardReaderSettingsConnectedViewController {
     func checkForCardReaderUpdate() {
-        guard ServiceLocator.featureFlagService.isFeatureFlagEnabled(.cardPresentSoftwareUpdates) else {
-            return
-        }
         guard let viewModel = viewModel else {
             return
         }
@@ -68,16 +76,7 @@ private extension CardReaderSettingsConnectedViewController {
     func onViewModelDidUpdate() {
         configureSections()
         configureTable()
-    }
-
-    func shouldShowUpdateControls() -> Bool {
-        guard ServiceLocator.featureFlagService.isFeatureFlagEnabled(.cardPresentSoftwareUpdates) else {
-            return false
-        }
-        guard let viewModel = viewModel else {
-            return false
-        }
-        return viewModel.readerUpdateAvailable == .isTrue
+        configureUpdateView()
     }
 
     /// Set the title and back button.
@@ -91,31 +90,27 @@ private extension CardReaderSettingsConnectedViewController {
     func configureSections() {
         sections = []
 
-        /// This section, if present, displays a prompt to update a reader running old software
+        /// This section displays whether or not there is update for the reader software
         ///
-        if shouldShowUpdateControls() {
-            sections.append(
-                Section(title: nil,
-                        rows: [
-                            .updatePrompt
-                        ]
-                )
-            )
+        let checkForReaderUpdateInProgress = viewModel?.checkForReaderUpdateInProgress ?? false
+        var rows = [Row]()
+        if checkForReaderUpdateInProgress {
+            rows = [.checkingForUpdate]
+        } else {
+            rows = [.updatePrompt]
         }
+
+        sections.append(Section(title: nil, rows: rows))
 
         /// This section displays details about the connected reader
         ///
-        var rows: [Row] = [.connectedReader]
-
-        if shouldShowUpdateControls() {
-            rows.append(.updateButton)
-        }
-
-        rows.append(.disconnectButton)
-
         sections.append(
             Section(title: Localization.sectionHeaderTitle.uppercased(),
-                    rows: rows
+                    rows: [
+                        .connectedReader,
+                        .updateButton,
+                        .disconnectButton
+                    ]
             )
         )
     }
@@ -125,6 +120,39 @@ private extension CardReaderSettingsConnectedViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.reloadData()
+    }
+
+    func configureUpdateView() {
+        // Only proceed if the view model reader update flag has changed since we last looked at it
+        guard let viewModel = viewModel, updateInProgress != viewModel.readerUpdateInProgress else {
+            return
+        }
+
+        // Update our flag to match the view model's
+        updateInProgress = viewModel.readerUpdateInProgress
+
+        // If we are not updating a reader, dismiss any updateViewController
+        if !updateInProgress {
+            updateViewController?.dismiss(animated: true, completion: { [weak self] in
+                guard let self = self else {
+                    return
+                }
+
+                if viewModel.readerUpdateCompletedSuccessfully {
+                    self.displayReaderUpdateSuccessNotice()
+                } else {
+                    self.displayReaderUpdateFailed()
+                }
+            })
+            return
+        }
+
+        // Otherwise, instantiate and present an updateViewController
+        updateViewController = UpdateViewController(headline: Localization.updateHeadline, footnote: Localization.updateFootnote)
+        guard let updateViewController = updateViewController else {
+            return
+        }
+        self.present(updateViewController, animated: true, completion: nil)
     }
 
     /// Register table cells.
@@ -139,6 +167,8 @@ private extension CardReaderSettingsConnectedViewController {
     ///
     func configure(_ cell: UITableViewCell, for row: Row, at indexPath: IndexPath) {
         switch cell {
+        case let cell as ActivitySpinnerAndLabelTableViewCell where row == .checkingForUpdate:
+            configureCheckingForUpdate(cell: cell)
         case let cell as LeftImageTableViewCell where row == .updatePrompt:
             configureUpdatePrompt(cell: cell)
         case let cell as ConnectedReaderTableViewCell where row == .connectedReader:
@@ -152,11 +182,29 @@ private extension CardReaderSettingsConnectedViewController {
         }
     }
 
-    private func configureUpdatePrompt(cell: LeftImageTableViewCell) {
-        cell.configure(image: .infoOutlineImage, text: Localization.updatePromptText)
+    private func configureCheckingForUpdate(cell: ActivitySpinnerAndLabelTableViewCell) {
+        cell.configure(labelText: Localization.updateChecking)
         cell.selectionStyle = .none
-        cell.backgroundColor = .warningBackground
-        cell.imageView?.tintColor = .warning
+    }
+
+    private func configureUpdatePrompt(cell: LeftImageTableViewCell) {
+        guard let readerUpdateAvailable = viewModel?.readerUpdateAvailable else {
+            return
+        }
+
+        if readerUpdateAvailable == .isFalse {
+            cell.configure(image: .infoOutlineImage, text: Localization.updateNotNeeded)
+            cell.backgroundColor = .none
+            cell.imageView?.tintColor = .info
+        }
+
+        if readerUpdateAvailable == .isTrue {
+            cell.configure(image: .infoOutlineImage, text: Localization.updateAvailable)
+            cell.backgroundColor = .warningBackground
+            cell.imageView?.tintColor = .warning
+        }
+
+        cell.selectionStyle = .none
         cell.textLabel?.numberOfLines = 0
         cell.textLabel?.textColor = .text
     }
@@ -164,25 +212,48 @@ private extension CardReaderSettingsConnectedViewController {
     private func configureConnectedReader(cell: ConnectedReaderTableViewCell) {
         let cellViewModel = ConnectedReaderTableViewCell.ViewModel(
             name: viewModel?.connectedReaderID,
-            batteryLevel: viewModel?.connectedReaderBatteryLevel
+            batteryLevel: viewModel?.connectedReaderBatteryLevel,
+            softwareVersion: viewModel?.connectedReaderSoftwareVersion
         )
         cell.configure(viewModel: cellViewModel)
         cell.selectionStyle = .none
     }
 
+    /// If a reader update is available, make the update button primary
+    /// If a reader update is available and a disconnect or update isn't already in progress, enable the button
+    ///
     private func configureUpdateButton(cell: ButtonTableViewCell) {
-        cell.configure(style: .primary, title: Localization.updateButtonTitle, bottomSpacing: 0) {
-            // TODO in a following PR
+        let readerUpdateAvailable = viewModel?.readerUpdateAvailable == .isTrue
+        let style: ButtonTableViewCell.Style = readerUpdateAvailable ? .primary : .secondary
+        cell.configure(style: style, title: Localization.updateButtonTitle, bottomSpacing: 0) {
+            self.viewModel?.startCardReaderUpdate()
         }
+
+        let readerDisconnectInProgress = viewModel?.readerDisconnectInProgress ?? false
+        let readerUpdateInProgress = viewModel?.readerUpdateInProgress ?? false
+        cell.enableButton(readerUpdateAvailable && !readerDisconnectInProgress && !readerUpdateInProgress)
+        cell.showActivityIndicator(readerUpdateInProgress)
+
         cell.selectionStyle = .none
         cell.backgroundColor = .clear
     }
 
+    /// If a reader update is not available, make the disconnect button primary
+    /// If a check for updates, a disconnect or an update isn't already in progress, enable the disconnect button
+    ///
     private func configureDisconnectButton(cell: ButtonTableViewCell) {
-        let style: ButtonTableViewCell.Style = shouldShowUpdateControls() ? .secondary : .primary
+        let checkForReaderUpdateInProgress = viewModel?.checkForReaderUpdateInProgress ?? false
+        let readerUpdateAvailable = viewModel?.readerUpdateAvailable == .isTrue
+        let style: ButtonTableViewCell.Style = readerUpdateAvailable ? .secondary : .primary
         cell.configure(style: style, title: Localization.disconnectButtonTitle) { [weak self] in
             self?.viewModel?.disconnectReader()
         }
+
+        let readerDisconnectInProgress = viewModel?.readerDisconnectInProgress ?? false
+        let readerUpdateInProgress = viewModel?.readerUpdateInProgress ?? false
+        cell.enableButton(!checkForReaderUpdateInProgress && !readerDisconnectInProgress && !readerUpdateInProgress)
+        cell.showActivityIndicator(readerDisconnectInProgress)
+
         cell.selectionStyle = .none
         cell.backgroundColor = .clear
     }
@@ -210,10 +281,7 @@ extension CardReaderSettingsConnectedViewController: UITableViewDataSource {
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if shouldShowUpdateControls() {
-            return section == 0 ? CGFloat.leastNonzeroMagnitude : UITableView.automaticDimension
-        }
-        return UITableView.automaticDimension
+        return section == 0 ? CGFloat.leastNonzeroMagnitude : UITableView.automaticDimension
     }
 
     func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
@@ -237,14 +305,23 @@ extension CardReaderSettingsConnectedViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate Conformance
 //
 extension CardReaderSettingsConnectedViewController: UITableViewDelegate {
-
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let row = rowAtIndexPath(indexPath)
-        return row.height
-    }
-
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+}
+
+// MARK: - Notices
+//
+private extension CardReaderSettingsConnectedViewController {
+    func displayReaderUpdateSuccessNotice() {
+        let notice = Notice(title: Localization.updateSuccess, feedbackType: .success)
+        ServiceLocator.noticePresenter.enqueue(notice: notice)
+    }
+
+    func displayReaderUpdateFailed() {
+        paymentAlerts.retryableError(from: self, tryAgain: {
+            self.viewModel?.startCardReaderUpdate()
+        })
     }
 }
 
@@ -256,6 +333,7 @@ private struct Section {
 }
 
 private enum Row: CaseIterable {
+    case checkingForUpdate
     case updatePrompt
     case connectedReader
     case updateButton
@@ -263,6 +341,8 @@ private enum Row: CaseIterable {
 
     var type: UITableViewCell.Type {
         switch self {
+        case .checkingForUpdate:
+            return ActivitySpinnerAndLabelTableViewCell.self
         case .updatePrompt:
             return LeftImageTableViewCell.self
         case .connectedReader:
@@ -271,15 +351,6 @@ private enum Row: CaseIterable {
             return ButtonTableViewCell.self
         case .disconnectButton:
             return ButtonTableViewCell.self
-        }
-    }
-
-    var height: CGFloat {
-        switch self {
-        case .connectedReader:
-            return 60
-        default:
-            return UITableView.automaticDimension
         }
     }
 
@@ -297,8 +368,18 @@ private extension CardReaderSettingsConnectedViewController {
             comment: "Settings > Manage Card Reader > Title for the reader connected screen in settings."
         )
 
-        static let updatePromptText = NSLocalizedString(
+        static let updateChecking = NSLocalizedString(
+            "Checking for reader software updates",
+            comment: "Settings > Manage Card Reader > Connected Reader > A prompt to indicate we are checking for reader updates"
+        )
+
+        static let updateAvailable = NSLocalizedString(
             "Please update your reader software to keep accepting payments",
+            comment: "Settings > Manage Card Reader > Connected Reader > A prompt to update a reader running older software"
+        )
+
+        static let updateNotNeeded = NSLocalizedString(
+            "Congratulations! Your reader is running the latest software",
             comment: "Settings > Manage Card Reader > Connected Reader > A prompt to update a reader running older software"
         )
 
@@ -316,5 +397,19 @@ private extension CardReaderSettingsConnectedViewController {
             "Disconnect Reader",
             comment: "Settings > Manage Card Reader > Connected Reader > A button to disconnect the reader"
         )
+
+        static let updateHeadline = NSLocalizedString(
+            "Updating software",
+            comment: "Headline on the full screen software update modal"
+        )
+
+        static let updateFootnote = NSLocalizedString(
+            "Your reader will automatically restart and reconnect after the update is complete",
+            comment: "Footnote on the full screen software update modal"
+        )
+
+        static let updateSuccess = NSLocalizedString(
+            "Reader software updated",
+            comment: "A notice presented after a successful update of the card reader software")
     }
 }

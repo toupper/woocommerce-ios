@@ -5,6 +5,7 @@ import Yosemite
 import SafariServices
 import MessageUI
 import Combine
+import SwiftUI
 
 // MARK: - OrderDetailsViewController: Displays the details for a given Order.
 //
@@ -65,6 +66,20 @@ final class OrderDetailsViewController: UIViewController {
     /// We need to cancel that subscription if the process is canceled by the user or when we connect to a reader.
     ///
     private var cardReaderAvailableSubscription: Combine.Cancellable? = nil
+
+    /// Connection Controller (helps connect readers)
+    ///
+    private lazy var connectionController: CardReaderConnectionController? = {
+        guard let siteID = viewModel?.order.siteID else {
+            return nil
+        }
+
+        return CardReaderConnectionController(
+            forSiteID: siteID,
+            knownReadersProvider: CardReaderSettingsKnownReadersStoredList(),
+            alertsProvider: CardReaderSettingsAlerts()
+        )
+    }()
 
     // MARK: - View Lifecycle
 
@@ -499,7 +514,7 @@ private extension OrderDetailsViewController {
                 assertionFailure("Cannot reprint a shipping label because `navigationController` is nil")
                 return
             }
-            let coordinator = PrintShippingLabelCoordinator(shippingLabel: shippingLabel, printType: .reprint, sourceViewController: navigationController)
+            let coordinator = PrintShippingLabelCoordinator(shippingLabel: shippingLabel, printType: .reprint, sourceNavigationController: navigationController)
             coordinator.showPrintUI()
         case .createShippingLabel:
             let shippingLabelFormVC = ShippingLabelFormViewController(order: viewModel.order)
@@ -512,13 +527,16 @@ private extension OrderDetailsViewController {
                 guard let self = self else { return }
                 self.navigationController?.popToViewController(self, animated: true)
             }
+            shippingLabelFormVC.hidesBottomBarWhenPushed = true
             navigationController?.show(shippingLabelFormVC, sender: self)
         case .shippingLabelTrackingMenu(let shippingLabel, let sourceView):
             shippingLabelTrackingMoreMenuTapped(shippingLabel: shippingLabel, sourceView: sourceView)
         case let .viewAddOns(addOns):
             itemAddOnsButtonTapped(addOns: addOns)
         case .editCustomerNote:
-            editCustomerNoteTapped()
+			editCustomerNoteTapped()
+        case .editShippingAddress:
+            editShippingAddressTapped()
         }
     }
 
@@ -527,13 +545,6 @@ private extension OrderDetailsViewController {
         let reviewOrderViewModel = ReviewOrderViewModel(order: viewModel.order, products: viewModel.products, showAddOns: viewModel.dataSource.showAddOns)
         let controller = ReviewOrderViewController(viewModel: reviewOrderViewModel) { [weak self] in
             guard let self = self else { return }
-            ServiceLocator.analytics.track(
-                .orderStatusChange,
-                withProperties: [
-                    "id": self.viewModel.order.orderID,
-                    "from": self.viewModel.order.status.rawValue,
-                    "to": OrderStatusEnum.completed.rawValue
-                ])
             let fulfillmentProcess = self.viewModel.markCompleted()
             let presenter = OrderFulfillmentNoticePresenter()
             presenter.present(process: fulfillmentProcess)
@@ -605,6 +616,15 @@ private extension OrderDetailsViewController {
             self?.show(refundViewController, sender: self)
         }
 
+        if let url = shippingLabel.commercialInvoiceURL {
+            actionSheet.addDefaultActionWithTitle(Localization.ShippingLabelMoreMenu.printCustomsFormAction) { [weak self] _ in
+                let printCustomsFormsView = PrintCustomsFormsView(invoiceURLs: [url])
+                let hostingController = UIHostingController(rootView: printCustomsFormsView)
+                hostingController.hidesBottomBarWhenPushed = true
+                self?.show(hostingController, sender: self)
+            }
+        }
+
         let popoverController = actionSheet.popoverPresentationController
         popoverController?.sourceView = sourceView
 
@@ -640,8 +660,17 @@ private extension OrderDetailsViewController {
     }
 
     func editCustomerNoteTapped() {
-        let editNoteViewController = EditCustomerNoteHostingController()
+        let viewModel = EditCustomerNoteViewModel(order: viewModel.order)
+        let editNoteViewController = EditCustomerNoteHostingController(viewModel: viewModel)
         present(editNoteViewController, animated: true, completion: nil)
+
+        ServiceLocator.analytics.track(event: WooAnalyticsEvent.OrderDetailsEdit.orderDetailEditFlowStarted(subject: .customerNote))
+    }
+
+    func editShippingAddressTapped() {
+        let viewModel = EditAddressFormViewModel(siteID: viewModel.order.siteID, address: viewModel.order.shippingAddress)
+        let editAddressViewController = EditAddressHostingController(viewModel: viewModel)
+        show(editAddressViewController, sender: self)
     }
 
     @objc private func collectPayment(at: IndexPath) {
@@ -715,12 +744,7 @@ private extension OrderDetailsViewController {
     }
 
     private func connectToCardReader() {
-        let connectionController = CardReaderConnectionController(
-            forSiteID: viewModel.order.siteID,
-            knownReadersProvider: CardReaderSettingsKnownReadersStoredList(),
-            alertsProvider: CardReaderSettingsAlerts()
-        )
-        connectionController.searchAndConnect(from: self) { _ in
+        connectionController?.searchAndConnect(from: self) { _ in
             /// No need for logic here. Once connected, the connected reader will publish
             /// through the `cardReaderAvailableSubscription`
         }
@@ -938,7 +962,7 @@ private extension OrderDetailsViewController {
     /// Returns an Order Update Action that will result in the specified Order Status updated accordingly.
     ///
     private func updateOrderStatusAction(siteID: Int64, orderID: Int64, status: OrderStatusEnum) -> Action {
-        return OrderAction.updateOrder(siteID: siteID, orderID: orderID, status: status, onCompletion: { [weak self] error in
+        return OrderAction.updateOrderStatus(siteID: siteID, orderID: orderID, status: status, onCompletion: { [weak self] error in
             guard let error = error else {
                 NotificationCenter.default.post(name: .ordersBadgeReloadRequired, object: nil)
                 self?.syncNotes()
@@ -1004,6 +1028,9 @@ private extension OrderDetailsViewController {
             static let cancelAction = NSLocalizedString("Cancel", comment: "Cancel the shipping label more menu action sheet")
             static let requestRefundAction = NSLocalizedString("Request a Refund",
                                                                comment: "Request a refund on a shipping label from the shipping label more menu action sheet")
+            static let printCustomsFormAction = NSLocalizedString("Print Customs Form",
+                                                                  comment: "Print the customs form for the shipping label" +
+                                                                    " from the shipping label more menu action sheet")
         }
 
         enum ShippingLabelTrackingMoreMenu {

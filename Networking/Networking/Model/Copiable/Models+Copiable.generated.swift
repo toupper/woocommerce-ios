@@ -814,7 +814,8 @@ extension ShippingLabel {
         originAddress: CopiableProp<ShippingLabelAddress> = .copy,
         destinationAddress: CopiableProp<ShippingLabelAddress> = .copy,
         productIDs: CopiableProp<[Int64]> = .copy,
-        productNames: CopiableProp<[String]> = .copy
+        productNames: CopiableProp<[String]> = .copy,
+        commercialInvoiceURL: NullableCopiableProp<String> = .copy
     ) -> ShippingLabel {
         let siteID = siteID ?? self.siteID
         let orderID = orderID ?? self.orderID
@@ -833,6 +834,7 @@ extension ShippingLabel {
         let destinationAddress = destinationAddress ?? self.destinationAddress
         let productIDs = productIDs ?? self.productIDs
         let productNames = productNames ?? self.productNames
+        let commercialInvoiceURL = commercialInvoiceURL ?? self.commercialInvoiceURL
 
         return ShippingLabel(
             siteID: siteID,
@@ -851,7 +853,8 @@ extension ShippingLabel {
             originAddress: originAddress,
             destinationAddress: destinationAddress,
             productIDs: productIDs,
-            productNames: productNames
+            productNames: productNames,
+            commercialInvoiceURL: commercialInvoiceURL
         )
     }
 }
@@ -999,6 +1002,27 @@ extension ShippingLabelCustomsForm.Item {
             hsTariffNumber: hsTariffNumber,
             originCountry: originCountry,
             productID: productID
+        )
+    }
+}
+
+extension ShippingLabelPackagesResponse {
+    public func copy(
+        storeOptions: CopiableProp<ShippingLabelStoreOptions> = .copy,
+        customPackages: CopiableProp<[ShippingLabelCustomPackage]> = .copy,
+        predefinedOptions: CopiableProp<[ShippingLabelPredefinedOption]> = .copy,
+        unactivatedPredefinedOptions: CopiableProp<[ShippingLabelPredefinedOption]> = .copy
+    ) -> ShippingLabelPackagesResponse {
+        let storeOptions = storeOptions ?? self.storeOptions
+        let customPackages = customPackages ?? self.customPackages
+        let predefinedOptions = predefinedOptions ?? self.predefinedOptions
+        let unactivatedPredefinedOptions = unactivatedPredefinedOptions ?? self.unactivatedPredefinedOptions
+
+        return ShippingLabelPackagesResponse(
+            storeOptions: storeOptions,
+            customPackages: customPackages,
+            predefinedOptions: predefinedOptions,
+            unactivatedPredefinedOptions: unactivatedPredefinedOptions
         )
     }
 }

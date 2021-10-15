@@ -31,7 +31,7 @@ final class EditProductCategoryListViewController: UIViewController {
         onCompletion = completion
         super.init(nibName: type(of: self).nibName, bundle: nil)
 
-        self.viewModel.newProductCategoryListViewModel = productCategoryListViewController.viewModel
+        self.viewModel.baseProductCategoryListViewModel = productCategoryListViewController.viewModel
     }
 
     required init?(coder aDecoder: NSCoder) {

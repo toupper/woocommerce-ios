@@ -51,8 +51,8 @@ final class FilterTypeViewModel {
 enum FilterListValueSelectorConfig {
     // Standard list selector with fixed options
     case staticOptions(options: [FilterType])
-    // Example: Categories
-    case custom
+    // Filter list selector for categories, retrieved dynamically
+    case categories(siteID: Int64)
 }
 
 /// Contains data for rendering a filter type row.
@@ -225,8 +225,9 @@ private extension FilterListViewController {
                 }
                 let staticListSelector = ListSelectorViewController(command: command, tableViewStyle: .plain) { _ in }
                 self.listSelector.navigationController?.pushViewController(staticListSelector, animated: true)
-            case .custom:
-                break
+            case let .categories(siteID):
+                self.listSelector.navigationController?
+                    .pushViewController(FilterProductCategoryListViewController(siteID: siteID), animated: true)
             }
         }
     }

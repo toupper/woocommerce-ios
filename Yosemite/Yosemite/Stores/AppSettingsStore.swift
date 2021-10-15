@@ -573,6 +573,7 @@ private extension AppSettingsStore {
                                 stockStatusFilter: ProductStockStatus? = nil,
                                 productStatusFilter: ProductStatus? = nil,
                                 productTypeFilter: ProductType? = nil,
+                                productCategoryFilter: ProductCategory? = nil,
                                 onCompletion: (Error?) -> Void) {
         var existingSettings: [Int64: StoredProductSettings.Setting] = [:]
         if let storedSettings: StoredProductSettings = try? fileStorage.data(for: productsSettingsURL) {
@@ -583,7 +584,8 @@ private extension AppSettingsStore {
                                                        sort: sort,
                                                        stockStatusFilter: stockStatusFilter,
                                                        productStatusFilter: productStatusFilter,
-                                                       productTypeFilter: productTypeFilter)
+                                                       productTypeFilter: productTypeFilter,
+                                                       productCategoryFilter: productCategoryFilter)
         existingSettings[siteID] = newSetting
 
         let newStoredProductSettings = StoredProductSettings(settings: existingSettings)

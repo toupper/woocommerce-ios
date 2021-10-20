@@ -49,4 +49,8 @@ public enum FeatureFlag: Int {
     /// Allows to create quick pay orders
     ///
     case quickPayPrototype
+
+    /// Allows to filter products by a product category, persisting it so the filter can remain after restarting the app
+    ///
+    case filterProductsByCategory
 }

@@ -58,19 +58,29 @@ final class FilterProductListViewModel: FilterListViewModel {
         self.productTypeFilterViewModel = ProductListFilter.productType.createViewModel(filters: filters, siteID: siteID)
         self.productCategoryFilterViewModel = ProductListFilter.productCategory.createViewModel(filters: filters, siteID: siteID)
 
-        self.filterTypeViewModels = [
+        var filterTypeViewModels = [
             stockStatusFilterViewModel,
             productStatusFilterViewModel,
-            productTypeFilterViewModel,
-            productCategoryFilterViewModel
+            productTypeFilterViewModel
         ]
+
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.filterProductsByCategory) {
+            filterTypeViewModels.append(productCategoryFilterViewModel)
+        }
+
+        self.filterTypeViewModels = filterTypeViewModels
     }
 
     var criteria: Filters {
         let stockStatus = stockStatusFilterViewModel.selectedValue as? ProductStockStatus ?? nil
         let productStatus = productStatusFilterViewModel.selectedValue as? ProductStatus ?? nil
         let productType = productTypeFilterViewModel.selectedValue as? ProductType ?? nil
-        let productCategory = productCategoryFilterViewModel.selectedValue as? ProductCategory ?? nil
+        var productCategory: ProductCategory? = nil
+
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.filterProductsByCategory),
+           let selectedProductCategory = productCategoryFilterViewModel.selectedValue as? ProductCategory {
+            productCategory = selectedProductCategory
+        }
 
         let numberOfActiveFilters = filterTypeViewModels.numberOfActiveFilters
 
@@ -91,8 +101,10 @@ final class FilterProductListViewModel: FilterListViewModel {
         let clearedProductType: ProductType? = nil
         productTypeFilterViewModel.selectedValue = clearedProductType
 
-        let clearedProductCategory: ProductCategory? = nil
-        productCategoryFilterViewModel.selectedValue = clearedProductCategory
+        if ServiceLocator.featureFlagService.isFeatureFlagEnabled(.filterProductsByCategory) {
+            let clearedProductCategory: ProductCategory? = nil
+            productCategoryFilterViewModel.selectedValue = clearedProductCategory
+        }
     }
 }
 

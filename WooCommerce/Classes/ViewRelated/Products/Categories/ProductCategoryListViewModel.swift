@@ -100,7 +100,7 @@ final class ProductCategoryListViewModel: ProductCategoryListViewModelProtocol {
 
     /// Select or Deselect a category
     ///
-    func selectOrDeselectCategory(index: Int) {
+    func selectOrDeselectCategory(index: Int, onSelection: ProductCategoryListViewController.Selection?) {
 
         guard let categoryViewModel = categoryViewModels[safe: index] else {
             return
@@ -118,6 +118,8 @@ final class ProductCategoryListViewModel: ProductCategoryListViewModelProtocol {
             } else {
                 selectedCategories.append(category)
             }
+
+            onSelection?(category)
         }
 
         updateViewModelsArray()

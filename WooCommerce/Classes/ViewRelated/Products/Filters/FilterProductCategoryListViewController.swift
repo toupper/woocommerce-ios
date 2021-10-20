@@ -8,9 +8,11 @@ import UIKit
 final class FilterProductCategoryListViewController: UIViewController {
 
     private let siteID: Int64
+    private let onSelection: ProductCategoryListViewController.Selection?
 
-    init(siteID: Int64) {
+    init(siteID: Int64, selection: ProductCategoryListViewController.Selection?) {
         self.siteID = siteID
+        onSelection = selection
 
         super.init(nibName: nil, bundle: nil)
     }

@@ -30,7 +30,7 @@ protocol ProductCategoryListViewModelProtocol: AnyObject {
 
     /// Select or Deselect a category
     ///
-    func selectOrDeselectCategory(index: Int)
+    func selectOrDeselectCategory(index: Int, onSelection: ProductCategoryListViewController.Selection?)
 
     /// Updates  `categoryViewModels` after a state change.
     ///

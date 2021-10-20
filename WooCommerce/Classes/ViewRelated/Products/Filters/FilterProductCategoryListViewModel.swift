@@ -68,7 +68,7 @@ final class FilterProductCategoryListViewModel: ProductCategoryListViewModelProt
     /// Reacts to the selection of any category by handling the case if the first row was selected
     /// (Any Category) or passing the value to the base view model otherwise
     ///
-    func selectOrDeselectCategory(index: Int) {
+    func selectOrDeselectCategory(index: Int, onSelection: ProductCategoryListViewController.Selection?) {
         defer { updateViewModelsArray() }
 
         guard index != 0 else {
@@ -81,7 +81,7 @@ final class FilterProductCategoryListViewModel: ProductCategoryListViewModelProt
 
         anyCategoryViewModel = ProductCategoryCellViewModel.anyCategoryCellViewModel(isSelected: false)
 
-        baseViewModel.selectOrDeselectCategory(index: index - 1)
+        baseViewModel.selectOrDeselectCategory(index: index - 1, onSelection: onSelection)
     }
 
     /// Updates view models adding the first `Any Category` row

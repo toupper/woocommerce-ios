@@ -16,12 +16,18 @@ final class ProductCategoryListViewController: UIViewController {
     // Completion callback
     //
     typealias Completion = (_ categories: [ProductCategory]) -> Void
+    typealias Selection = (_ categories: ProductCategory) -> Void
     private let onCompletion: Completion
+    private let onSelection: Selection?
 
-    init(siteID: Int64, viewModelType: ProductCategoryListViewModelProtocol.Type = ProductCategoryListViewModel.self, completion: @escaping Completion) {
+    init(siteID: Int64,
+         viewModelType: ProductCategoryListViewModelProtocol.Type = ProductCategoryListViewModel.self,
+         completion: @escaping Completion,
+         selection: Selection? = nil) {
         self.viewModel = viewModelType.init(siteID: siteID)
         self.siteID = siteID
         onCompletion = completion
+        onSelection = selection
         super.init(nibName: type(of: self).nibName, bundle: nil)
     }
 
@@ -142,7 +148,7 @@ extension ProductCategoryListViewController: UITableViewDataSource, UITableViewD
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        viewModel.selectOrDeselectCategory(index: indexPath.row)
+        viewModel.selectOrDeselectCategory(index: indexPath.row, onSelection: onSelection)
         tableView.reloadData()
     }
 }

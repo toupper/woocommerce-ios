@@ -63,15 +63,18 @@ final class ProductCategoryListViewModel: ProductCategoryListViewModelProtocol {
         return ResultsController<StorageProductCategory>(storageManager: storageManager, matching: predicate, sortedBy: [descriptor])
     }()
 
-    init(storesManager: StoresManager = ServiceLocator.stores, siteID: Int64, enforceUniqueSelection: Bool = false) {
+    init(storesManager: StoresManager = ServiceLocator.stores,
+         siteID: Int64,
+         selectedCategories: [ProductCategory],
+         enforceUniqueSelection: Bool = false) {
         self.storesManager = storesManager
         self.siteID = siteID
         self.enforceUniqueSelection = enforceUniqueSelection
-        selectedCategories = []
+        self.selectedCategories = selectedCategories
     }
 
-    convenience init(siteID: Int64) {
-        self.init(storesManager: ServiceLocator.stores, siteID: siteID)
+    convenience init(siteID: Int64, selectedCategories: [ProductCategory]) {
+        self.init(storesManager: ServiceLocator.stores, siteID: siteID, selectedCategories: selectedCategories)
     }
 
     /// Load existing categories from storage and fire the synchronize all categories action.

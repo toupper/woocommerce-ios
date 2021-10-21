@@ -16,15 +16,16 @@ final class ProductCategoryListViewController: UIViewController {
     // Completion callback
     //
     typealias Completion = (_ categories: [ProductCategory]) -> Void
-    typealias Selection = (_ categories: ProductCategory) -> Void
+    typealias Selection = (_ category: ProductCategory?) -> Void
     private let onCompletion: Completion
     private let onSelection: Selection?
 
     init(siteID: Int64,
          viewModelType: ProductCategoryListViewModelProtocol.Type = ProductCategoryListViewModel.self,
          completion: @escaping Completion,
-         selection: Selection? = nil) {
-        self.viewModel = viewModelType.init(siteID: siteID)
+         selection: Selection? = nil,
+         selectedCategories: [ProductCategory]) {
+        self.viewModel = viewModelType.init(siteID: siteID, selectedCategories: selectedCategories)
         self.siteID = siteID
         onCompletion = completion
         onSelection = selection

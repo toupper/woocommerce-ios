@@ -32,15 +32,16 @@ final class FilterProductCategoryListViewModel: ProductCategoryListViewModelProt
 
     /// Holds a reference to the fixed "Any" cell view model on top of the list
     ///
-    private var anyCategoryViewModel = ProductCategoryCellViewModel.anyCategoryCellViewModel(isSelected: true)
+    private var anyCategoryViewModel: ProductCategoryCellViewModel
 
     /// Base view model decorated by this class
     ///
     private let baseViewModel: ProductCategoryListViewModel
     private var onSyncStateChange: ((ProductCategoryListViewModel.SyncingState) -> Void)?
 
-    init(siteID: Int64) {
-        baseViewModel = ProductCategoryListViewModel(siteID: siteID, enforceUniqueSelection: true)
+    init(siteID: Int64, selectedCategories: [ProductCategory]) {
+        anyCategoryViewModel = ProductCategoryCellViewModel.anyCategoryCellViewModel(isSelected: selectedCategories.isEmpty)
+        baseViewModel = ProductCategoryListViewModel(siteID: siteID, selectedCategories: selectedCategories, enforceUniqueSelection: true)
     }
 
     /// Trigger a fetch via the base view model
@@ -75,6 +76,7 @@ final class FilterProductCategoryListViewModel: ProductCategoryListViewModelProt
             selectedCategories = []
             anyCategoryViewModel = ProductCategoryCellViewModel.anyCategoryCellViewModel(isSelected: true)
             updateViewModelsArray()
+            onSelection?(nil)
 
             return
         }

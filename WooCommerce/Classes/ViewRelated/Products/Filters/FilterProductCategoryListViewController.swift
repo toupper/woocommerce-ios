@@ -1,6 +1,7 @@
 
 import Foundation
 import UIKit
+import Yosemite
 
 /// FilterProductCategoryListViewController: Displays the list of ProductCategories associated to the active Account,
 /// and allows the selection of one of them, or any.
@@ -9,10 +10,24 @@ final class FilterProductCategoryListViewController: UIViewController {
 
     private let siteID: Int64
     private let onSelection: ProductCategoryListViewController.Selection?
+    private let productCategoryListViewController: ProductCategoryListViewController
 
-    init(siteID: Int64, selection: ProductCategoryListViewController.Selection?) {
+    init(siteID: Int64, selection: ProductCategoryListViewController.Selection?, selected: ProductCategory?) {
         self.siteID = siteID
         onSelection = selection
+
+        let selectedCategories: [ProductCategory]
+        if let selected = selected {
+            selectedCategories = [selected]
+        } else {
+            selectedCategories = []
+        }
+
+        productCategoryListViewController = ProductCategoryListViewController(siteID: siteID,
+                                                                                  viewModelType: FilterProductCategoryListViewModel.self,
+                                                                                  completion: {_ in },
+                                                                                  selection: onSelection,
+                                                                                  selectedCategories: selectedCategories)
 
         super.init(nibName: nil, bundle: nil)
     }
@@ -29,10 +44,6 @@ final class FilterProductCategoryListViewController: UIViewController {
     }
 
     func configureProductCategoryListView() {
-        let productCategoryListViewController = ProductCategoryListViewController(siteID: siteID,
-                                                                                  viewModelType: FilterProductCategoryListViewModel.self,
-                                                                                  completion: {_ in })
-
         addChild(productCategoryListViewController)
         attachSubview(productCategoryListViewController.view)
         productCategoryListViewController.didMove(toParent: self)

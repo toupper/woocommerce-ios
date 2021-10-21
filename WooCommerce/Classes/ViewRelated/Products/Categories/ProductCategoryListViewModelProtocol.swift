@@ -14,7 +14,7 @@ protocol ProductCategoryListViewModelProtocol: AnyObject {
 
     /// Initialisation with the site Id related to the categories
     ///
-    init(siteID: Int64)
+    init(siteID: Int64, selectedCategories: [ProductCategory])
 
     /// Triggers a fetch of categories
     ///

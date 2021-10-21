@@ -11,7 +11,7 @@ final class EditProductCategoryListViewController: UIViewController {
     @IBOutlet private weak var addButtonSeparator: UIView!
 
     private lazy var productCategoryListViewController: ProductCategoryListViewController = {
-        ProductCategoryListViewController( siteID: product.siteID, completion: onCompletion)
+        ProductCategoryListViewController( siteID: product.siteID, completion: onCompletion, selectedCategories: [])
     }()
 
     private let viewModel: EditProductCategoryListViewModel

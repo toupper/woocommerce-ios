@@ -1,5 +1,6 @@
 import UIKit
 import Observables
+import Yosemite
 
 /// The view model protocol for filtering a list of models with generic filters.
 ///
@@ -229,7 +230,9 @@ private extension FilterListViewController {
                 let staticListSelector = ListSelectorViewController(command: command, tableViewStyle: .plain) { _ in }
                 self.listSelector.navigationController?.pushViewController(staticListSelector, animated: true)
             case let .categories(siteID):
-                let filterProductCategoryListViewController = FilterProductCategoryListViewController(siteID: siteID, selection: selectedValueAction)
+                let filterProductCategoryListViewController = FilterProductCategoryListViewController(siteID: siteID,
+                                                                                                      selection: selectedValueAction,
+                                                                                                      selected: selected.selectedValue as? ProductCategory)
 
                 self.listSelector.navigationController?
                     .pushViewController(filterProductCategoryListViewController, animated: true)

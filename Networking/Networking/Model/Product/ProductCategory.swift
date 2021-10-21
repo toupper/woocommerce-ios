@@ -49,6 +49,7 @@ public struct ProductCategory: Codable, Equatable, GeneratedFakeable {
         try container.encode(name, forKey: .name)
         try container.encode(slug, forKey: .slug)
         try container.encode(siteID, forKey: .siteID)
+        try container.encode(parentID, forKey: .parentID)
     }
 
     private static func siteID(from decoder: Decoder, container: KeyedDecodingContainer<ProductCategory.CodingKeys>) -> Int64? {

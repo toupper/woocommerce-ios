@@ -39,6 +39,11 @@ public struct StoredProductSettings: Codable, Equatable, GeneratedFakeable {
             if productTypeFilter != nil {
                 total += 1
             }
+
+            if productCategoryFilter != nil {
+                total += 1
+            }
+
             return total
         }
     }

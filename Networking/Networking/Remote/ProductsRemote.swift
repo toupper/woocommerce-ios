@@ -16,6 +16,7 @@ public protocol ProductsRemoteProtocol {
                          stockStatus: ProductStockStatus?,
                          productStatus: ProductStatus?,
                          productType: ProductType?,
+                         productCategory: ProductCategory?,
                          orderBy: ProductsRemote.OrderKey,
                          order: ProductsRemote.Order,
                          excludedProductIDs: [Int64],
@@ -104,16 +105,26 @@ public final class ProductsRemote: Remote, ProductsRemoteProtocol {
                                 stockStatus: ProductStockStatus? = nil,
                                 productStatus: ProductStatus? = nil,
                                 productType: ProductType? = nil,
+                                productCategory: ProductCategory? = nil,
                                 orderBy: OrderKey = .name,
                                 order: Order = .ascending,
                                 excludedProductIDs: [Int64] = [],
                                 completion: @escaping (Result<[Product], Error>) -> Void) {
         let stringOfExcludedProductIDs = excludedProductIDs.map { String($0) }
             .joined(separator: ",")
+
+        let categoryIDParameter: String
+        if let categoryID = productCategory?.categoryID {
+            categoryIDParameter = String(categoryID)
+        } else {
+            categoryIDParameter = ""
+        }
+
         let filterParameters = [
             ParameterKey.stockStatus: stockStatus?.rawValue ?? "",
             ParameterKey.productStatus: productStatus?.rawValue ?? "",
             ParameterKey.productType: productType?.rawValue ?? "",
+            ParameterKey.category: categoryIDParameter,
             ParameterKey.exclude: stringOfExcludedProductIDs
             ].filter({ $0.value.isEmpty == false })
 
@@ -298,6 +309,7 @@ public extension ProductsRemote {
         static let productStatus: String = "status"
         static let productType: String = "type"
         static let stockStatus: String = "stock_status"
+        static let category: String   = "category"
         static let fields: String     = "_fields"
     }
 

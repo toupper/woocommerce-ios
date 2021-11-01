@@ -15,6 +15,12 @@ public enum ProductCategoryAction: Action {
     ///
     case addProductCategory(siteID: Int64, name: String, parentID: Int64?, onCompletion: (Result<ProductCategory, Error>) -> Void)
 
+    /// Synchronizes the filter product category setting, updating it with the new information if any, or deleting
+    /// in case the product category was removed remotely.
+    /// `onCompletion` will be invoked when the sync operation finishes. `error` will be nill if the operation succeed.
+    ///
+    case synchronizeProductCategoryFilterSetting(siteID: Int64, onCompletion: (Error?) -> Void)
+
 }
 
 /// Defines all errors that a `ProductCategoryAction` can return

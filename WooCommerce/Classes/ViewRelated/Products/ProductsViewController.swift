@@ -865,22 +865,18 @@ extension ProductsViewController: SyncingCoordinatorDelegate {
 
         let action = ProductCategoryAction.synchronizeProductCategory(siteID: siteID, categoryID: productCategory.categoryID) { [weak self] result in
             var updatingProductCategory: ProductCategory? = productCategory
+            var numberOfActiveFilters = settings.numberOfActiveFilters()
+            
             switch result {
             case .success(let productCategory):
                 updatingProductCategory = productCategory
             case .failure(let error):
                 if let error = error as? ProductCategoryActionError,
                    case .categoryDoesNotExistRemotely = error {
-                    // The product category was removed, we pass nil
+                    // The product category was removed, we remove the filter and decrease the number of active filters
                     updatingProductCategory = nil
+                    numberOfActiveFilters -= 1
                 }
-            }
-
-            var numberOfActiveFilters = settings.numberOfActiveFilters()
-            if settings.productCategoryFilter != nil,
-               updatingProductCategory == nil {
-                numberOfActiveFilters -= 1
-
             }
 
             if settings.productCategoryFilter != updatingProductCategory {

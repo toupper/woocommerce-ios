@@ -95,6 +95,49 @@ final class ProductCategoriesRemoteTests: XCTestCase {
         XCTAssertEqual(try result?.get().name, "Dress")
     }
 
+    func test_loadProductCategory_then_returns_parsed_ProductCategory() {
+        // Given
+        let remote = ProductCategoriesRemote(network: network)
+        let categoryID: Int64 = 44
+
+        network.simulateResponse(requestUrlSuffix: "products/categories/\(categoryID)", filename: "category")
+
+        let result: Result<ProductCategory, Error>? = waitFor { [weak self] promise in
+            guard let self = self else {
+                return
+            }
+
+            remote.loadProductCategory(with: categoryID, siteID: self.sampleSiteID) {  aResult in
+                promise(aResult)
+            }
+        }
+
+        // Then
+        XCTAssertNil(result?.failure)
+        XCTAssertNotNil(try result?.get())
+        XCTAssertEqual(try result?.get().name, "Dress")
+    }
+
+    func test_loadProductCategory_network_fails_then_returns_error() {
+        // Given
+        let remote = ProductCategoriesRemote(network: network)
+        let categoryID: Int64 = 44
+
+        let result: Result<ProductCategory, Error>? = waitFor { [weak self] promise in
+            guard let self = self else {
+                return
+            }
+
+            remote.loadProductCategory(with: categoryID, siteID: self.sampleSiteID) {  aResult in
+                promise(aResult)
+            }
+        }
+
+        // Then
+        XCTAssertNil(try? result?.get())
+        XCTAssertNotNil(result?.failure)
+    }
+
     /// Verifies that createProductCategory properly relays Networking Layer errors.
     ///
     func testCreateProductCategoryProperlyRelaysNetwokingErrors() {

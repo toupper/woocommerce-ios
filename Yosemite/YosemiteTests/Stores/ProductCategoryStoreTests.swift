@@ -151,6 +151,8 @@ final class ProductCategoryStoreTests: XCTestCase {
             XCTAssertEqual(pageNumber, 2)
         case .none:
             XCTFail("errorResponse should not be nil")
+        default:
+            break
         }
     }
 
@@ -211,11 +213,7 @@ final class ProductCategoryStoreTests: XCTestCase {
         // Then the category should be added
         let addedCategory = viewStorage.loadProductCategory(siteID: sampleSiteID, categoryID: 104)
         XCTAssertNotNil(addedCategory)
-        XCTAssertEqual(addedCategory?.categoryID, 104)
-        XCTAssertEqual(addedCategory?.parentID, 0)
-        XCTAssertEqual(addedCategory?.siteID, sampleSiteID)
-        XCTAssertEqual(addedCategory?.name, "Dress")
-        XCTAssertEqual(addedCategory?.slug, "Shirt")
+        assertAddedCategoryTookDataFromMockedNetworkData(addedCategory)
         XCTAssertNil(result?.failure)
     }
 
@@ -282,10 +280,85 @@ final class ProductCategoryStoreTests: XCTestCase {
         // Then new categories should be stored and old categories should be deleted
         XCTAssertEqual(storedProductCategoriesCount, 2)
     }
+
+    func test_synchronizeProductCategory_successfully_then_it_stores_the_requested_category() {
+        let categoryID: Int64 = 123
+        network.simulateResponse(requestUrlSuffix: "products/categories/\(categoryID)", filename: "category")
+
+        let addedCategory: Storage.ProductCategory? = waitFor { [weak self] promise in
+            guard let self = self else {
+                return
+            }
+
+            let action = ProductCategoryAction.synchronizeProductCategory(siteID: self.sampleSiteID, categoryID: categoryID) { result in
+                promise(self.viewStorage.loadProductCategory(siteID: self.sampleSiteID, categoryID: 104))
+            }
+
+            self.store.onAction(action)
+        }
+
+        assertAddedCategoryTookDataFromMockedNetworkData(addedCategory)
+    }
+
+    func test_synchronizeProductCategory_successfully_then_it_provides_the_requested_category() {
+        let categoryID: Int64 = 123
+        network.simulateResponse(requestUrlSuffix: "products/categories/\(categoryID)", filename: "category")
+
+        let result: Result<Networking.ProductCategory, Error>? = waitFor { [weak self] promise in
+            guard let self = self else {
+                return
+            }
+
+            let action = ProductCategoryAction.synchronizeProductCategory(siteID: self.sampleSiteID, categoryID: categoryID) { result in
+                promise(result)
+            }
+
+            self.store.onAction(action)
+        }
+
+        XCTAssertEqual(try result?.get().name, "Dress")
+    }
+
+    func test_synchronizeProductCategory_fails_with_resourceDoesNotExist_then_it_provides_right_error() {
+        let categoryID: Int64 = 123
+        network.simulateError(requestUrlSuffix: "products/categories/\(categoryID)", error: DotcomError.resourceDoesNotExist)
+
+        let retrievedError: Error? = waitFor { [weak self] promise in
+            guard let self = self else {
+                return
+            }
+
+            let action = ProductCategoryAction.synchronizeProductCategory(siteID: self.sampleSiteID, categoryID: categoryID) { result in
+                switch result {
+                case .failure(let error):
+                    promise(error)
+                default:
+                    break
+                }
+            }
+
+            self.store.onAction(action)
+        }
+
+        guard let error = retrievedError as? ProductCategoryActionError,
+              case .categoryDoesNotExistRemotely = error else {
+            XCTFail()
+            return
+        }
+    }
 }
 
 private extension ProductCategoryStoreTests {
     func sampleCategory(categoryID: Int64) -> Networking.ProductCategory {
         return Networking.ProductCategory(categoryID: categoryID, siteID: sampleSiteID, parentID: 0, name: "Sample", slug: "Sample")
+    }
+
+    func assertAddedCategoryTookDataFromMockedNetworkData(_ productCategory: Storage.ProductCategory?) {
+        XCTAssertNotNil(productCategory)
+        XCTAssertEqual(productCategory?.categoryID, 104)
+        XCTAssertEqual(productCategory?.parentID, 0)
+        XCTAssertEqual(productCategory?.siteID, sampleSiteID)
+        XCTAssertEqual(productCategory?.name, "Dress")
+        XCTAssertEqual(productCategory?.slug, "Shirt")
     }
 }

@@ -35,8 +35,8 @@ public final class ProductCategoryStore: Store {
             synchronizeAllProductCategories(siteID: siteID, fromPageNumber: fromPageNumber, onCompletion: onCompletion)
         case .addProductCategory(siteID: let siteID, name: let name, parentID: let parentID, onCompletion: let onCompletion):
             addProductCategory(siteID: siteID, name: name, parentID: parentID, onCompletion: onCompletion)
-        case .synchronizeProductCategoryFilterSetting(siteID: let siteID, onCompletion: let onCompletion):
-            synchronizeProductCategoryFilterSetting(siteID: siteID, onCompletion: onCompletion)
+        case .synchronizeProductCategory(siteID: let siteID, categoryID: let CategoryID, onCompletion: let onCompletion):
+            synchronizeProductCategory(siteID: siteID, categoryID: CategoryID, onCompletion: onCompletion)
         }
     }
 }
@@ -109,6 +109,27 @@ private extension ProductCategoryStore {
             case .failure(let error):
                 onCompletion(.failure(error))
             }
+
+        }
+    }
+
+    /// Loads a remote product category associated with the given Category ID and Site ID
+    ///
+    func synchronizeProductCategory(siteID: Int64, categoryID: Int64, onCompletion: @escaping (Result<ProductCategory, Error>) -> Void) {
+        remote.loadProductCategory(with: categoryID, siteID: siteID) { [weak self] result in
+            switch result {
+            case .success(let productCategory):
+                self?.upsertStoredProductCategoriesInBackground([productCategory], siteID: siteID) {
+                    onCompletion(.success(productCategory))
+                }
+            case .failure(let error):
+                if let error = error as? DotcomError,
+                   case .resourceDoesNotExist = error {
+                    onCompletion(.failure(ProductCategoryActionError.categoryDoesNotExistRemotely))
+                } else {
+                    onCompletion(.failure(error))
+                }
+            }
         }
     }
 
@@ -139,23 +160,6 @@ private extension ProductCategoryStore {
             DispatchQueue.main.async(execute: onCompletion)
         }
     }
-
-    /// Checks whether there is a ProductCategory stored to filter a list of products.
-    /// If there is one, checks whether that property exists remotely, updating it locally
-    /// with the new information, of deleting it if the ProductCategory does not exist remotely anymore
-    ///
-    func synchronizeProductCategoryFilterSetting(siteID: Int64, onCompletion: @escaping (Error?) -> Void) {
-        let loadAction = AppSettingsAction.loadProductsSettings(siteID: siteID) { [weak self] (result) in
-            switch result {
-            case .success(let settings):
-                self?.synchronizeProductCategoryFilter(from: settings, onCompletion: onCompletion)
-            case .failure(let error):
-                onCompletion(error)
-            }
-        }
-
-        dispatcher.dispatch(loadAction)
-    }
 }
 
 private extension ProductCategoryStore {
@@ -178,49 +182,6 @@ private extension ProductCategoryStore {
                 return storage.insertNewObject(ofType: Storage.ProductCategory.self)
             }()
             storageProductCategory.update(with: readOnlyProductCategory)
-        }
-    }
-
-    /// Updates (OR Removes) the filter ProductCategory in StoredProductSettings according to the remote value
-    ///
-    /// - Parameters:
-    ///     - settings: Settings containing the filter ProductCategory
-    ///     - onCompletion: Closure to be executed once the operation is finished
-    ///
-    func synchronizeProductCategoryFilter(from settings: StoredProductSettings.Setting, onCompletion: @escaping (Error?) -> Void) {
-        guard let productCategoryFilter = settings.productCategoryFilter else {
-            onCompletion(nil)
-            return
-        }
-
-        remote.loadProductCategory(with: productCategoryFilter.categoryID,
-                                   siteID: productCategoryFilter.siteID) { [weak self] result in
-            var updatingProductCategory: ProductCategory? = productCategoryFilter
-            switch result {
-            case .success(let productCategory):
-                updatingProductCategory = productCategory
-            case .failure(let error):
-                if let error = error as? DotcomError,
-                   case .resourceDoesNotExist = error {
-                    // The product category was removed, let's do the same locally
-                    updatingProductCategory = nil
-                }
-            }
-
-            if updatingProductCategory != productCategoryFilter {
-                let updateAction = AppSettingsAction.upsertProductsSettings(siteID: productCategoryFilter.siteID,
-                                                                            sort: settings.sort,
-                                                                            stockStatusFilter: settings.stockStatusFilter,
-                                                                            productStatusFilter: settings.productStatusFilter,
-                                                                            productTypeFilter: settings.productTypeFilter,
-                                                                            productCategoryFilter: updatingProductCategory) { (error) in
-                    onCompletion(error)
-                      }
-
-                self?.dispatcher.dispatch(updateAction)
-            } else {
-                onCompletion(nil)
-            }
         }
     }
 }

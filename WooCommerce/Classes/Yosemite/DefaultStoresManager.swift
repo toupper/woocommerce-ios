@@ -315,15 +315,6 @@ private extension DefaultStoresManager {
         }
         dispatch(sitePlanAction)
 
-        group.enter()
-        let synchronizeProductCategoryFilterSettingAction = ProductCategoryAction.synchronizeProductCategoryFilterSetting(siteID: siteID) { error in
-            if let error = error {
-                errors.append(error)
-            }
-            group.leave()
-        }
-        dispatch(synchronizeProductCategoryFilterSettingAction)
-
         group.notify(queue: .main) {
             if errors.isEmpty {
                 DDLogInfo("🎛 Site settings sync completed for siteID \(siteID)")

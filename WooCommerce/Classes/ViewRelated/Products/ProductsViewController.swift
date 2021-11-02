@@ -168,16 +168,7 @@ final class ProductsViewController: UIViewController {
         registerTableViewCells()
 
         showTopBannerViewIfNeeded()
-
-        /// We sync the local product settings for configuring local sorting and filtering.
-        /// If there are some info stored when this screen is loaded, the data will be updated using the stored sort/filters.
-        /// If no info are stored (so there is a failure), we resynchronize the syncingCoordinator for updating the screen using the default sort/filters.
-        ///
-        syncLocalProductsSettings { [weak self] (result) in
-            if result.isFailure {
-                self?.syncingCoordinator.resynchronize()
-            }
-        }
+        syncProductsSettings()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -566,6 +557,21 @@ private extension ProductsViewController {
         }
         displayNoResultsOverlay()
     }
+
+    /// We sync the local product settings for configuring local sorting and filtering.
+    /// If there are some info stored when this screen is loaded, the data will be updated using the stored sort/filters.
+    /// If no info are stored (so there is a failure), we resynchronize the syncingCoordinator for updating the screen using the default sort/filters.
+    ///
+    func syncProductsSettings() {
+        syncLocalProductsSettings { [weak self] (result) in
+            switch result {
+            case .success(let settings):
+                self?.syncProductCategoryFilterRemotely(from: settings)
+            case .failure(_):
+                self?.syncingCoordinator.resynchronize()
+            }
+        }
+    }
 }
 
 // MARK: - UITableViewDataSource Conformance
@@ -847,6 +853,49 @@ extension ProductsViewController: SyncingCoordinatorDelegate {
             }
             onCompletion(result)
         }
+        ServiceLocator.stores.dispatch(action)
+    }
+
+    /// Syncs the Product Category filter of settings remotely, updating the filters in case there were any change (e.g Product Category was removed)
+    ///
+    private func syncProductCategoryFilterRemotely(from settings: StoredProductSettings.Setting) {
+        guard let productCategory = settings.productCategoryFilter else {
+            return
+        }
+
+        let action = ProductCategoryAction.synchronizeProductCategory(siteID: siteID, categoryID: productCategory.categoryID) { [weak self] result in
+            var updatingProductCategory: ProductCategory? = productCategory
+            switch result {
+            case .success(let productCategory):
+                updatingProductCategory = productCategory
+            case .failure(let error):
+                if let error = error as? ProductCategoryActionError,
+                   case .categoryDoesNotExistRemotely = error {
+                    // The product category was removed, we pass nil
+                    updatingProductCategory = nil
+                }
+            }
+
+            var numberOfActiveFilters = settings.numberOfActiveFilters()
+            if settings.productCategoryFilter != nil,
+               updatingProductCategory == nil {
+                numberOfActiveFilters -= 1
+
+            }
+
+            if settings.productCategoryFilter != updatingProductCategory {
+                let updatingFilters = FilterProductListViewModel.Filters(stockStatus: settings.stockStatusFilter,
+                                                                    productStatus: settings.productStatusFilter,
+                                                                    productType: settings.productTypeFilter,
+                                                                    productCategory: updatingProductCategory,
+                                                                    numberOfActiveFilters: numberOfActiveFilters)
+                self?.filters = updatingFilters
+
+                self?.updateLocalProductSettings(sort: self?.sortOrder,
+                                                 filters: updatingFilters)
+            }
+        }
+
         ServiceLocator.stores.dispatch(action)
     }
 }
